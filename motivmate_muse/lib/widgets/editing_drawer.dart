@@ -750,7 +750,10 @@ class _TextSettingsEditorState extends State<TextSettingsEditor> {
                 divisions: (_maxAllowedFontSize - 10.0).round() < 1 ? 1 : (_maxAllowedFontSize - 10.0).round(),
                 label: '${_draft.fontSize.round()}pt',
                 onChanged: (v) {
-                  _notify(_draft.copyWith(fontSize: v));
+                  _notify(_draft.copyWith(
+                    fontSize: v,
+                    cardTopN: 0.4
+                  ));
                 },
               ),
             ),

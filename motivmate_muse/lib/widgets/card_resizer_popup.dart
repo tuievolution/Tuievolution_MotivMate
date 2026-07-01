@@ -182,7 +182,7 @@ class _CardResizerPopupState extends State<CardResizerPopup> {
                     // YÜZEY 2: KART GÖVDESİ (Sürüklenebilir)
                     Positioned(
                       left: left,
-                      top: top,
+                      top: _topN.clamp(0.0, 0.9) * cH,
                       width: width,
                       child: Stack(
                         children: [
@@ -316,11 +316,11 @@ class _CardResizerPopupState extends State<CardResizerPopup> {
               icon: const Icon(Icons.restore_rounded, color: Colors.white, size: 24),
               tooltip: 'Sıfırla',
               onPressed: () {
-                final d = AppSettings.defaults();
                 setState(() {
-                  _leftN   = d.cardLeftN;
-                  _topN    = d.cardTopN;
-                  _widthN  = d.cardWidthN;
+                  // Tam orta konum değerleri:
+                  _leftN = 0.05;  // Yatayda %5 soldan boşluk
+                  _widthN = 0.9;  // Genişlik %90
+                  _topN = 0.4;    // Dikeyde tam orta (0.4)
                 });
               },
             ),
