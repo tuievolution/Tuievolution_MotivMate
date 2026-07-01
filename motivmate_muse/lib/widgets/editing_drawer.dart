@@ -270,7 +270,22 @@ class _EditingDrawerState extends State<EditingDrawer> {
             divisions: 60,
             onChanged: (v) => _updateDraft(draft.copyWith(cardOpacity: v)),
           ),
+          
         ],
+
+        const SizedBox(height: 12),
+        ListTile(
+          contentPadding: EdgeInsets.zero,
+          title: Text(_l('Köşe Yuvarlama', 'Corner Radius')),
+          subtitle: Text('${draft.cardBorderRadius.toStringAsFixed(0)}px'),
+        ),
+        Slider(
+          value: draft.cardBorderRadius,
+          min: 0.0,
+          max: 60.0,
+          divisions: 30,
+          onChanged: (v) => _updateDraft(draft.copyWith(cardBorderRadius: v)),
+        ),
 
         // Arka plan opaklığı (Fotoğraf karartması) her zaman kalır
         ListTile(
@@ -433,6 +448,8 @@ class _TextSettingsEditorState extends State<TextSettingsEditor> {
   // O dile özgü hesaplanan maksimum dinamik punto
   double _maxAllowedFontSize = 52.0;
 
+  bool _isInit = false;
+
   @override
   void initState() {
     super.initState();
@@ -448,8 +465,15 @@ class _TextSettingsEditorState extends State<TextSettingsEditor> {
       _customEffectColor = effectC;
     }
     
-    // Açılışta maksimum boyutu hesapla
-    _recalculateMaxFontSize(notify: false);
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_isInit) {
+      _recalculateMaxFontSize(notify: false);
+      _isInit = true;
+    }
   }
 
   @override

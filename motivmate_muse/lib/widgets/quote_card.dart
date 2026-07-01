@@ -158,10 +158,10 @@ class QuoteCard extends StatelessWidget {
               fit: BoxFit.scaleDown,
               child: ConstrainedBox(
                 constraints: BoxConstraints(
-                  maxWidth: constraints.maxWidth > 0
-                      ? constraints.maxWidth - quotePadding * 2
-                      : 320,
-                ),
+                      maxWidth: constraints.maxWidth > 0
+                          ? constraints.maxWidth - (quotePadding * 2) - (showBackground ? borderRadius * 0.6 : 0)
+                          : 320,
+                    ),
                 child: Text(
                   '"$text"',
                   textAlign: TextAlign.center,
@@ -198,7 +198,11 @@ class QuoteCard extends StatelessWidget {
       return Container(
         width: double.infinity,
         decoration: decoration,
-        padding: EdgeInsets.all(quotePadding),
+        padding: EdgeInsets.all(quotePadding).copyWith(
+              // Kart yuvarlandıkça yazının köşelere çarpmasını engellemek için dinamik tampon boşluk
+              left: quotePadding + (showBackground ? borderRadius * 0.3 : 0),
+              right: quotePadding + (showBackground ? borderRadius * 0.3 : 0),
+            ),
         child: content,
       );
     }
@@ -208,7 +212,11 @@ class QuoteCard extends StatelessWidget {
       child: Container(
         constraints: const BoxConstraints(maxWidth: 420),
         decoration: decoration,
-        padding: EdgeInsets.all(quotePadding),
+        padding: EdgeInsets.all(quotePadding).copyWith(
+              // Kart yuvarlandıkça yazının köşelere çarpmasını engellemek için dinamik tampon boşluk
+              left: quotePadding + (showBackground ? borderRadius * 0.3 : 0),
+              right: quotePadding + (showBackground ? borderRadius * 0.3 : 0),
+            ),
         child: content,
       ),
     );

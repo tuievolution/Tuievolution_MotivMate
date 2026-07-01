@@ -29,6 +29,7 @@ class AppSettings {
   final double cardWidthN; // 0..1 (card width as fraction of screen width)
   final double cardHeightN; // 0..1 (card height as fraction of screen height)
   final int cardBackgroundColorValue;
+  final double cardBorderRadius; // YENİ: Köşe yuvarlama ayarı
 
   // Text edits
   final double fontSize;
@@ -65,6 +66,7 @@ class AppSettings {
     required this.cardWidthN,
     required this.cardHeightN,
     required this.cardBackgroundColorValue,
+    required this.cardBorderRadius,
     required this.fontSize,
     required this.textColorValue,
     required this.effectColorValue,
@@ -97,6 +99,7 @@ class AppSettings {
       cardWidthN: 0.88, // 88% of screen width
       cardHeightN: 0.36, // 36% of screen height
       cardBackgroundColorValue: 0xFFFFFFFB,
+      cardBorderRadius: 16.0, // YENİ: Varsayılan köşe yuvarlama değeri
       fontSize: 22,
       textColorValue: 0xFF2A1B12,
       effectColorValue: 0xFF000000,
@@ -131,6 +134,7 @@ class AppSettings {
     double? cardWidthN,
     double? cardHeightN,
     int? cardBackgroundColorValue,
+    double? cardBorderRadius,
     double? fontSize,
     int? textColorValue,
     int? effectColorValue,
@@ -145,6 +149,7 @@ class AppSettings {
     int? popupTimeOfDayMinutes,
     int? popupBetweenStartMinutes,
     int? popupBetweenEndMinutes,
+    
   }) {
     return AppSettings(
       themeId: themeId ?? this.themeId,
@@ -161,6 +166,7 @@ class AppSettings {
       cardWidthN: cardWidthN ?? this.cardWidthN,
       cardHeightN: cardHeightN ?? this.cardHeightN,
       cardBackgroundColorValue: cardBackgroundColorValue ?? this.cardBackgroundColorValue,
+      cardBorderRadius: cardBorderRadius ?? this.cardBorderRadius,
       fontSize: fontSize ?? this.fontSize,
       textColorValue: textColorValue ?? this.textColorValue,
       effectColorValue: effectColorValue ?? this.effectColorValue,
@@ -199,6 +205,7 @@ class AppSettings {
         'cardWidthN': cardWidthN,
         'cardHeightN': cardHeightN,
         'cardBackgroundColorValue': cardBackgroundColorValue,
+        'cardBorderRadius': cardBorderRadius, // YENİ
         'fontSize': fontSize,
         'textColorValue': textColorValue,
         'effectColorValue': effectColorValue,
@@ -232,6 +239,7 @@ class AppSettings {
       cardWidthN: (json['cardWidthN'] as num?)?.toDouble() ?? defaults.cardWidthN,
       cardHeightN: (json['cardHeightN'] as num?)?.toDouble() ?? defaults.cardHeightN,
       cardBackgroundColorValue: json['cardBackgroundColorValue'] as int? ?? defaults.cardBackgroundColorValue,
+      cardBorderRadius: (json['cardBorderRadius'] as num?)?.toDouble() ?? defaults.cardBorderRadius, // YENİ
       fontSize: (json['fontSize'] as num?)?.toDouble() ?? defaults.fontSize,
       textColorValue: json['textColorValue'] as int? ?? defaults.textColorValue,
       effectColorValue: json['effectColorValue'] as int? ?? defaults.effectColorValue,
