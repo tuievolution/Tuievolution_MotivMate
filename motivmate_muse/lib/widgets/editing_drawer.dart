@@ -492,6 +492,16 @@ class _TextSettingsEditorState extends State<TextSettingsEditor> {
   }
 
   bool _testTextFits(double fontSize, String text) {
+    // Cihazın canlı ekran boyutlarını alıyoruz
+    final screenSize = MediaQuery.of(context).size;
+    
+    // Kartın içindeki padding değerini düşerek net metin alan genişliğini hesapla
+    final double actualMaxWidth = (_draft.cardWidthN * screenSize.width) - 36.0; 
+    
+    // Kartın en üst çizgisinden ekranın altına kadar olan toplam boşluktan 
+    // alt aksiyon barı ve güvenli alanı (140px) çıkararak sığılabilecek net yüksekliği bul
+    final double availableHeight = ((1.0 - _draft.cardTopN) * screenSize.height) - 140.0;
+
     final style = _getGoogleFontLocal(_draft.fontFamily, textStyle: TextStyle(fontSize: fontSize, fontWeight: FontWeight.w500, height: 1.25));
     final tp = TextPainter(
       text: TextSpan(text: '"$text"', style: style),
@@ -499,8 +509,11 @@ class _TextSettingsEditorState extends State<TextSettingsEditor> {
       textAlign: TextAlign.center,
     );
     
-    tp.layout(maxWidth: 260.0);
-    if (tp.height > 360.0) {
+    // Testi kartın o anki gerçek genişliğine göre yap
+    tp.layout(maxWidth: actualMaxWidth.clamp(80.0, screenSize.width));
+    
+    // Eğer metnin yüksekliği ekranda aşağı doğru kalan boşluğu aşıyorsa taşma var demektir
+    if (tp.height > availableHeight) {
       return false;
     }
     return true;
