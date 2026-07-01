@@ -56,17 +56,19 @@ class NotificationService {
     _initialized = true;
   }
 
-  NotificationDetails _notificationDetails() {
-    const androidDetails = AndroidNotificationDetails(
+  NotificationDetails _notificationDetails([String? bodyText]) {
+    final androidDetails = AndroidNotificationDetails(
       _channelId,
       _channelName,
       channelDescription: 'MotivMood daily motivation',
       importance: Importance.high,
       priority: Priority.high,
+      // YENİ: Metin uzunsa bildirimin aşağı kaydırılarak (genişletilerek) tam okunmasını sağlar
+      styleInformation: bodyText != null ? BigTextStyleInformation(bodyText) : null,
     );
 
     const iosDetails = DarwinNotificationDetails();
-    return const NotificationDetails(android: androidDetails, iOS: iosDetails);
+    return NotificationDetails(android: androidDetails, iOS: iosDetails);
   }
 
   Future<void> cancelAll() async {
@@ -75,11 +77,13 @@ class NotificationService {
 
   Future<void> showBarNotification(Quote quote, String language) async {
     const id = 999999;
+    final bodyText = '"${quote.text(language)}"';
+    
     await _plugin.show(
       id: id,
       title: 'MotivMood',
-      body: '"${quote.text(language)}"',
-      notificationDetails: _notificationDetails(),
+      body: bodyText,
+      notificationDetails: _notificationDetails(bodyText), // Metni buraya da veriyoruz
     );
   }
 
@@ -128,6 +132,8 @@ class NotificationService {
 
         // Fetch the strict universal quote for this specific calendar day
         final universalQuote = _getUniversalDailyQuote(allQuotes, date);
+        final bodyText = '"${universalQuote.text(settings.appLanguage)}"';
+        final details = _notificationDetails(bodyText);
 
         try {
           await _plugin.zonedSchedule(
@@ -153,6 +159,8 @@ class NotificationService {
         // --- INTERVAL NOTIFICATIONS ---
         // If the user wants notifications every X minutes, we just use today's daily quote
         final targetQuote = _getUniversalDailyQuote(allQuotes, now);
+        final bodyText = '"${targetQuote.text(settings.appLanguage)}"';
+        final details = _notificationDetails(bodyText);
         final intervalMinutes = settings.barIntervalMinutes.clamp(15, 240); // Minimum 15 mins to prevent spam
 
         for (int i = 1; i <= 8; i++) { // Schedule the next 8 interval occurrences
