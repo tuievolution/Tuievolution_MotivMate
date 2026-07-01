@@ -367,6 +367,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                 textEffectId: appState.settings.textEffectId,
                                 showBackground: showCardBg,
                                 fillContainer: true,
+                                borderRadius: appState.settings.cardBorderRadius,
                               ),
                             ),
                         ],

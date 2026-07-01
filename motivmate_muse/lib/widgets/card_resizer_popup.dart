@@ -214,6 +214,7 @@ class _CardResizerPopupState extends State<CardResizerPopup> {
                                 showBackground:
                                     widget.settings.showCardBackground,
                                 fillContainer: true,
+                                borderRadius: widget.settings.cardBorderRadius,
                               ),
                             ),
                           ),

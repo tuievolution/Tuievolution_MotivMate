@@ -159,7 +159,8 @@ class QuoteCard extends StatelessWidget {
               child: ConstrainedBox(
                 constraints: BoxConstraints(
                       maxWidth: constraints.maxWidth > 0
-                          ? constraints.maxWidth - (quotePadding * 2) - (showBackground ? borderRadius * 0.6 : 0)
+                          // .clamp eklenerek negatif genişlik çökmesi engellendi
+                          ? (constraints.maxWidth - (quotePadding * 2) - (showBackground ? borderRadius * 0.6 : 0)).clamp(0.0, double.infinity)
                           : 320,
                     ),
                 child: Text(
