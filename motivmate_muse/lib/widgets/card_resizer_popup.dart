@@ -320,7 +320,7 @@ class _CardResizerPopupState extends State<CardResizerPopup> {
                   // Tam orta konum değerleri:
                   _leftN = 0.05;  // Yatayda %5 soldan boşluk
                   _widthN = 0.9;  // Genişlik %90
-                  _topN = 0.4;    // Dikeyde tam orta (0.4)
+                  _topN = 0.35;    // Dikeyde tam orta (0.4)
                 });
               },
             ),

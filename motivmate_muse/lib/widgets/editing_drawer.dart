@@ -752,7 +752,7 @@ class _TextSettingsEditorState extends State<TextSettingsEditor> {
                 onChanged: (v) {
                   _notify(_draft.copyWith(
                     fontSize: v,
-                    cardTopN: 0.4
+                    cardTopN: 0.35
                   ));
                 },
               ),
