@@ -368,6 +368,8 @@ class _HomeScreenState extends State<HomeScreen> {
                                 showBackground: showCardBg,
                                 fillContainer: true,
                                 borderRadius: appState.settings.cardBorderRadius,
+                                cardBorderThickness: appState.settings.cardBorderThickness,
+                                cardBorderColorValue: appState.settings.cardBorderColorValue,
                               ),
                             ),
                         ],

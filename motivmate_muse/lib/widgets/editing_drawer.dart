@@ -856,6 +856,8 @@ class _TextSettingsEditorState extends State<TextSettingsEditor> {
             textEffectId: _draft.textEffectId,
             effectColor: effectColor,
             borderRadius: _draft.cardBorderRadius,
+            cardBorderThickness: _draft.cardBorderThickness,
+            cardBorderColorValue: _draft.cardBorderColorValue,
           ),
         ),
         const SizedBox(height: 20),
