@@ -271,9 +271,7 @@ class _EditingDrawerState extends State<EditingDrawer> {
             onChanged: (v) => _updateDraft(draft.copyWith(cardOpacity: v)),
           ),
           
-        ],
-
-        const SizedBox(height: 12),
+          const SizedBox(height: 12),
         ListTile(
           contentPadding: EdgeInsets.zero,
           title: Text(_l('Köşe Yuvarlama', 'Corner Radius')),
@@ -300,6 +298,21 @@ class _EditingDrawerState extends State<EditingDrawer> {
           divisions: 20,
           onChanged: (v) => _updateDraft(draft.copyWith(cardBorderThickness: v)),
         ),
+        if (draft.cardBorderThickness > 0) ...[
+          const SizedBox(height: 6),
+          _colorExpansionTile(
+            cs: cs,
+            title: _l('Çerçeve Rengi', 'Frame Color'),
+            hexValue: draft.cardBorderColorValue,
+            pickerColor: Color(draft.cardBorderColorValue),
+            enableAlpha: true,
+            onColorChanged: (c) =>
+                _updateDraft(draft.copyWith(cardBorderColorValue: c.toARGB32())),
+          ),
+        ],
+      ],
+
+        
 
         // Arka plan opaklığı (Fotoğraf karartması) her zaman kalır
         ListTile(
