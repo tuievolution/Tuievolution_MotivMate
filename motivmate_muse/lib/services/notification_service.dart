@@ -109,7 +109,6 @@ class NotificationService {
     await _configureTimezoneSafely();
     await _plugin.cancelAll();
 
-    final details = _notificationDetails();
     final now = tz.TZDateTime.now(tz.local);
 
     if (settings.barTiming == BarTiming.timeOfDay) {

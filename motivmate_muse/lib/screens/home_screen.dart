@@ -15,6 +15,8 @@ import '../widgets/settings_drawer.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../cache_limit.dart';
 
+import 'package:google_fonts/google_fonts.dart';
+
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
@@ -50,7 +52,7 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  // ── YENİ: Üstten Kayan Özel Bildirim Barı (Overlay) ──
+  // Üstten Kayan Özel Bildirim Barı (Overlay) ──
   void _showTopWarning(BuildContext context, String message) {
     final overlay = Overlay.of(context);
     late OverlayEntry overlayEntry;
@@ -95,13 +97,70 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
+  // Yeni söz geldiğinde kartı ekrana göre otomatik boyutlandırır
+  void _adjustAndSetNewQuote(String newText, AppState appState) {
+    final screenSize = MediaQuery.of(context).size;
+    final currentSettings = appState.settings;
+
+    // 1. Kullanılabilir net alanı hesapla (Genişlik ve Yükseklik)
+    final double actualMaxWidth = (currentSettings.cardWidthN * screenSize.width) - 36.0; 
+    final double availableHeight = ((1.0 - currentSettings.cardTopN) * screenSize.height) - 140.0;
+
+    double safeFontSize = currentSettings.fontSize;
+    
+    // 2. Yazı tipi stilini al (Hata vermemesi için GoogleFonts'un dinamik yapısı kullanıldı)
+    TextStyle getStyle(double fs) {
+      try {
+        return GoogleFonts.getFont(currentSettings.fontFamily, fontSize: fs, fontWeight: FontWeight.w500, height: 1.25);
+      } catch (_) {
+        return GoogleFonts.roboto(fontSize: fs, fontWeight: FontWeight.w500, height: 1.25);
+      }
+    }
+
+    // 3. Yazı ekrana sığana kadar puntoyu küçült
+    while (safeFontSize > 12.0) {
+      final tp = TextPainter(
+        text: TextSpan(text: '"$newText"', style: getStyle(safeFontSize)),
+        textDirection: TextDirection.ltr,
+        textAlign: TextAlign.center,
+      );
+      
+      tp.layout(maxWidth: actualMaxWidth.clamp(80.0, screenSize.width));
+      
+      if (tp.height <= availableHeight) {
+        break; // Yazı sığdı, döngüyü kır!
+      }
+      safeFontSize -= 2.0; // Sığmadıysa puntoyu küçült
+    }
+
+    // 4. Eğer söz aşırı uzunsa (punto çok küçüldüyse), kartı ekranın daha üstüne taşı
+    double targetTopN = currentSettings.cardTopN;
+    if (safeFontSize < 18.0) {
+      targetTopN = 0.25; // Kartı yukarı çekip aşağıda boşluk yaratır
+      safeFontSize = 18.0; // Puntoyu en az 18'de tutarak okunabilirliği korur
+    }
+
+    // 5. Ayarları yeni font ve konuma göre güncelle
+    final updatedSettings = currentSettings.copyWith(
+      fontSize: safeFontSize,
+      cardTopN: targetTopN,
+    );
+
+    // Güncellemeyi kaydet
+    appState.updateSettingsTemporary(updatedSettings);
+    appState.persistSettings(); // Kalıcı olarak ayarları kaydet (opsiyonel)
+  }
+
   Future<void> _changeImageAd(BuildContext scaffoldCtx, AppState appState) async {
     final canGetNewQuote = await appState.canWatchAd(); 
     if (!scaffoldCtx.mounted) return;
 
     if (canGetNewQuote) {
       if (appState.billingService.isPremium) {
+        // Reklamsız akış
         await appState.incrementAdWatchAndRefreshQuote();
+        // Söz değiştiği an yeni söze göre hizala
+        _adjustAndSetNewQuote(appState.quote.text(appState.settings.appLanguage), appState);
         if (mounted) setState(() {});
       } else {
         ScaffoldMessenger.of(scaffoldCtx).showSnackBar(
@@ -120,6 +179,8 @@ class _HomeScreenState extends State<HomeScreen> {
                   ad.dispose();
                   if (isRewardEarned) {
                     await appState.incrementAdWatchAndRefreshQuote();
+                    // Söz değiştiği an yeni söze göre hizala
+                    _adjustAndSetNewQuote(appState.quote.text(appState.settings.appLanguage), appState);
                     if (mounted) setState(() {}); 
                   }
                 },
@@ -144,6 +205,8 @@ class _HomeScreenState extends State<HomeScreen> {
     } else {
       // Limit Doldu: Reklamsız hafızadaki sözler arası geçiş yap
       appState.cycleSeenQuotes();
+      // Döngüyle dönen eski söze göre de hizala
+      _adjustAndSetNewQuote(appState.quote.text(appState.settings.appLanguage), appState);
       if (mounted) setState(() {});
       
       // GÜNCELLEME: SnackBar yerine üstten açılan fonksiyon çağrıldı
