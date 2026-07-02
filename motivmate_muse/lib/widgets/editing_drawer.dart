@@ -287,6 +287,20 @@ class _EditingDrawerState extends State<EditingDrawer> {
           onChanged: (v) => _updateDraft(draft.copyWith(cardBorderRadius: v)),
         ),
 
+        const SizedBox(height: 12),
+        ListTile(
+          contentPadding: EdgeInsets.zero,
+          title: Text(_l('Çerçeve Kalınlığı', 'Frame Thickness')),
+          subtitle: Text('${draft.cardBorderThickness.toStringAsFixed(1)}px'),
+        ),
+        Slider(
+          value: draft.cardBorderThickness,
+          min: 0.0, // 0 = Çerçeve yok
+          max: 10.0, // Maksimum 10px kalınlık
+          divisions: 20,
+          onChanged: (v) => _updateDraft(draft.copyWith(cardBorderThickness: v)),
+        ),
+
         // Arka plan opaklığı (Fotoğraf karartması) her zaman kalır
         ListTile(
           contentPadding: EdgeInsets.zero,

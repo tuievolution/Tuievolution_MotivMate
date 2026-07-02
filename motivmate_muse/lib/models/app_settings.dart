@@ -3,7 +3,6 @@ enum BarTiming {
   timeOfDay,
 }
 
-// Popup zamanlaması için gerekli olan Enum eklendi
 enum PopupTiming {
   immediate,
   timeOfDay,
@@ -12,39 +11,36 @@ enum PopupTiming {
 
 class AppSettings {
   final String themeId;
-  final String appLanguage; // tr | en
+  final String appLanguage;
 
-  // Photo edits
-  final double blurSigma; // background blur intensity
-  final String photoFilterId; // "none", "sepia", etc.
-  final double photoFilterIntensity; // 0.0 to 1.0
+  final double blurSigma;
+  final String photoFilterId;
+  final double photoFilterIntensity;
 
-  // Card edits
   final bool showCard;
   final bool showCardBackground;
-  final double backgroundOverlayOpacity; // overlay over background image
-  final double cardOpacity; // card container opacity
-  final double cardLeftN; // 0..1 (left edge position, fraction of screen width)
-  final double cardTopN; // 0..1 (top edge position, fraction of screen height)
-  final double cardWidthN; // 0..1 (card width as fraction of screen width)
-  final double cardHeightN; // 0..1 (card height as fraction of screen height)
+  final double backgroundOverlayOpacity;
+  final double cardOpacity;
+  final double cardLeftN;
+  final double cardTopN;
+  final double cardWidthN;
+  final double cardHeightN;
   final int cardBackgroundColorValue;
-  final double cardBorderRadius; // YENİ: Köşe yuvarlama ayarı
+  final double cardBorderRadius;
+  final double cardBorderThickness;
+  final int cardBorderColorValue;
 
-  // Text edits
   final double fontSize;
   final int textColorValue;
   final int effectColorValue;
   final String fontFamily;
   final String textEffectId;
 
-  // Notifications
   final bool barNotificationsEnabled;
   final BarTiming barTiming;
   final int barIntervalMinutes;
   final int barTimeOfDayMinutes;
 
-  // --- YENİ EKLENEN POPUP (AÇILIŞ KARTI) DEĞİŞKENLERİ ---
   final bool popupOnOpenEnabled;
   final PopupTiming popupTiming;
   final int popupTimeOfDayMinutes;
@@ -67,6 +63,8 @@ class AppSettings {
     required this.cardHeightN,
     required this.cardBackgroundColorValue,
     required this.cardBorderRadius,
+    required this.cardBorderThickness,
+    required this.cardBorderColorValue,
     required this.fontSize,
     required this.textColorValue,
     required this.effectColorValue,
@@ -84,7 +82,7 @@ class AppSettings {
   });
 
   factory AppSettings.defaults() {
-    return AppSettings(
+    return const AppSettings(
       themeId: 'amethyst',
       appLanguage: 'tr',
       blurSigma: 0,
@@ -94,12 +92,14 @@ class AppSettings {
       showCardBackground: true,
       backgroundOverlayOpacity: 0.35,
       cardOpacity: 0.6,
-      cardLeftN: 0.06,  // Perfectly centered horizontally: (1.0 - 0.88)/2
-      cardTopN: 0.32,   // Perfectly centered vertically: (1.0 - 0.36)/2
-      cardWidthN: 0.88, // 88% of screen width
-      cardHeightN: 0.36, // 36% of screen height
+      cardLeftN: 0.06,
+      cardTopN: 0.32,
+      cardWidthN: 0.88,
+      cardHeightN: 0.36,
       cardBackgroundColorValue: 0xFFFFFFFB,
-      cardBorderRadius: 16.0, // YENİ: Varsayılan köşe yuvarlama değeri
+      cardBorderRadius: 16.0,
+      cardBorderThickness: 0.0,
+      cardBorderColorValue: 0xFFFFFFFF,
       fontSize: 22,
       textColorValue: 0xFF2A1B12,
       effectColorValue: 0xFF000000,
@@ -109,13 +109,11 @@ class AppSettings {
       barTiming: BarTiming.intervalMinutes,
       barIntervalMinutes: 120,
       barTimeOfDayMinutes: 9 * 60,
-      
-      // Popup default değerleri
       popupOnOpenEnabled: true,
       popupTiming: PopupTiming.immediate,
-      popupTimeOfDayMinutes: 9 * 60, // 09:00
-      popupBetweenStartMinutes: 8 * 60, // 08:00
-      popupBetweenEndMinutes: 22 * 60, // 22:00
+      popupTimeOfDayMinutes: 9 * 60,
+      popupBetweenStartMinutes: 8 * 60,
+      popupBetweenEndMinutes: 22 * 60,
     );
   }
 
@@ -135,6 +133,8 @@ class AppSettings {
     double? cardHeightN,
     int? cardBackgroundColorValue,
     double? cardBorderRadius,
+    double? cardBorderThickness,
+    int? cardBorderColorValue,
     double? fontSize,
     int? textColorValue,
     int? effectColorValue,
@@ -149,7 +149,6 @@ class AppSettings {
     int? popupTimeOfDayMinutes,
     int? popupBetweenStartMinutes,
     int? popupBetweenEndMinutes,
-    
   }) {
     return AppSettings(
       themeId: themeId ?? this.themeId,
@@ -167,6 +166,8 @@ class AppSettings {
       cardHeightN: cardHeightN ?? this.cardHeightN,
       cardBackgroundColorValue: cardBackgroundColorValue ?? this.cardBackgroundColorValue,
       cardBorderRadius: cardBorderRadius ?? this.cardBorderRadius,
+      cardBorderThickness: cardBorderThickness ?? this.cardBorderThickness,
+      cardBorderColorValue: cardBorderColorValue ?? this.cardBorderColorValue,
       fontSize: fontSize ?? this.fontSize,
       textColorValue: textColorValue ?? this.textColorValue,
       effectColorValue: effectColorValue ?? this.effectColorValue,
@@ -205,7 +206,9 @@ class AppSettings {
         'cardWidthN': cardWidthN,
         'cardHeightN': cardHeightN,
         'cardBackgroundColorValue': cardBackgroundColorValue,
-        'cardBorderRadius': cardBorderRadius, // YENİ
+        'cardBorderRadius': cardBorderRadius,
+        'cardBorderThickness': cardBorderThickness,
+        'cardBorderColorValue': cardBorderColorValue,
         'fontSize': fontSize,
         'textColorValue': textColorValue,
         'effectColorValue': effectColorValue,
@@ -239,7 +242,9 @@ class AppSettings {
       cardWidthN: (json['cardWidthN'] as num?)?.toDouble() ?? defaults.cardWidthN,
       cardHeightN: (json['cardHeightN'] as num?)?.toDouble() ?? defaults.cardHeightN,
       cardBackgroundColorValue: json['cardBackgroundColorValue'] as int? ?? defaults.cardBackgroundColorValue,
-      cardBorderRadius: (json['cardBorderRadius'] as num?)?.toDouble() ?? defaults.cardBorderRadius, // YENİ
+      cardBorderRadius: (json['cardBorderRadius'] as num?)?.toDouble() ?? defaults.cardBorderRadius,
+      cardBorderThickness: (json['cardBorderThickness'] as num?)?.toDouble() ?? defaults.cardBorderThickness,
+      cardBorderColorValue: json['cardBorderColorValue'] as int? ?? defaults.cardBorderColorValue,
       fontSize: (json['fontSize'] as num?)?.toDouble() ?? defaults.fontSize,
       textColorValue: json['textColorValue'] as int? ?? defaults.textColorValue,
       effectColorValue: json['effectColorValue'] as int? ?? defaults.effectColorValue,

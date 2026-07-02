@@ -1,12 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-/// Işık şiddeti (slider) ile uyumlu çalışan dinamik gölge ve efekt üreticisi
 List<Shadow> _buildShadows(String effectId, Color effectColor) {
-  // Slider'dan gelen şeffaflık (şiddet) değerini alıyoruz (0.0 - 1.0)
   final double baseAlpha = effectColor.a;
 
-  // Şiddet oranını bozmadan efekt katmanları oluşturan yardımcı fonksiyon
   Color c(double multiplier) => effectColor.withValues(alpha: (baseAlpha * multiplier).clamp(0.0, 1.0));
 
   switch (effectId) {
@@ -52,7 +49,6 @@ List<Shadow> _buildShadows(String effectId, Color effectColor) {
     case 'emboss':
       return [
         Shadow(color: Colors.white.withValues(alpha: baseAlpha * 0.6), blurRadius: 1, offset: const Offset(-1, -1)),
-        // Alt gölge kısmı artık sabit siyah değil, kullanıcının seçtiği renk (c(1.0)) olacak:
         Shadow(color: c(1.0), blurRadius: 1, offset: const Offset(1, 1)),
       ];
     case 'none':
@@ -61,7 +57,6 @@ List<Shadow> _buildShadows(String effectId, Color effectColor) {
   }
 }
 
-/// Garantili Google Fonts Eşleştirici
 TextStyle _getGoogleFont(String fontFamily, {TextStyle? textStyle}) {
   switch (fontFamily) {
     case 'Lato': return GoogleFonts.lato(textStyle: textStyle);
@@ -97,6 +92,8 @@ class QuoteCard extends StatelessWidget {
 
   final bool fillContainer;
   final double borderRadius;
+  final double cardBorderThickness;
+  final int cardBorderColorValue;
   final double quotePadding;
 
   const QuoteCard({
@@ -113,16 +110,16 @@ class QuoteCard extends StatelessWidget {
     this.showBackground = true,
     this.fillContainer = false,
     this.borderRadius = 16,
+    this.cardBorderThickness = 0.0,
+    this.cardBorderColorValue = 0xFFFFFFFF,
     this.quotePadding = 18,
   });
 
   @override
   Widget build(BuildContext context) {
-    final effectiveBackground = cardBackgroundColor.withValues(alpha: opacity.clamp(0.0, 1.0));
     final effColor = effectColor ?? Colors.transparent;
     final shadows = _buildShadows(textEffectId, effColor);
 
-    // Limitler Editor'e (48) uyumlu hale getirildi
     final clampedFontSize = fontSize.clamp(10.0, 48.0);
     final authorFontSize = (clampedFontSize * 0.45).clamp(10.0, 24.0);
 
@@ -159,7 +156,6 @@ class QuoteCard extends StatelessWidget {
               child: ConstrainedBox(
                 constraints: BoxConstraints(
                       maxWidth: constraints.maxWidth > 0
-                          // .clamp eklenerek negatif genişlik çökmesi engellendi
                           ? (constraints.maxWidth - (quotePadding * 2) - (showBackground ? borderRadius * 0.6 : 0)).clamp(0.0, double.infinity)
                           : 320,
                     ),
@@ -184,23 +180,22 @@ class QuoteCard extends StatelessWidget {
       },
     );
 
-    final decoration = showBackground
-        ? BoxDecoration(
-            color: effectiveBackground,
-            borderRadius: BorderRadius.circular(borderRadius),
-            border: Border.all(
-              color: Colors.white.withValues(alpha: 0.22),
-              width: 1,
-            ),
-          )
-        : null;
+    final decoration = BoxDecoration(
+      color: showBackground ? cardBackgroundColor.withValues(alpha: opacity) : Colors.transparent,
+      borderRadius: BorderRadius.circular(borderRadius),
+      border: cardBorderThickness > 0
+          ? Border.all(
+              color: Color(cardBorderColorValue),
+              width: cardBorderThickness,
+            )
+          : null,
+    );
 
     if (fillContainer) {
       return Container(
         width: double.infinity,
         decoration: decoration,
         padding: EdgeInsets.all(quotePadding).copyWith(
-              // Kart yuvarlandıkça yazının köşelere çarpmasını engellemek için dinamik tampon boşluk
               left: quotePadding + (showBackground ? borderRadius * 0.3 : 0),
               right: quotePadding + (showBackground ? borderRadius * 0.3 : 0),
             ),
@@ -214,7 +209,6 @@ class QuoteCard extends StatelessWidget {
         constraints: const BoxConstraints(maxWidth: 420),
         decoration: decoration,
         padding: EdgeInsets.all(quotePadding).copyWith(
-              // Kart yuvarlandıkça yazının köşelere çarpmasını engellemek için dinamik tampon boşluk
               left: quotePadding + (showBackground ? borderRadius * 0.3 : 0),
               right: quotePadding + (showBackground ? borderRadius * 0.3 : 0),
             ),
