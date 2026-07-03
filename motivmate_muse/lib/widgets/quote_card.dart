@@ -183,7 +183,8 @@ class QuoteCard extends StatelessWidget {
     final decoration = BoxDecoration(
       color: showBackground ? cardBackgroundColor.withValues(alpha: opacity) : Colors.transparent,
       borderRadius: BorderRadius.circular(borderRadius),
-      border: cardBorderThickness > 0
+      // YENİ: Çerçeve SADECE showBackground (kart gösterimi) 'true' ise ve kalınlık 0'dan büyükse çizilir
+      border: (showBackground && cardBorderThickness > 0)
           ? Border.all(
               color: Color(cardBorderColorValue),
               width: cardBorderThickness,
