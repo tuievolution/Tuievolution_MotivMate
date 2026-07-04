@@ -241,7 +241,6 @@ class _EditingDrawerState extends State<EditingDrawer> {
           value: draft.showCardBackground,
           onChanged: (v) {
             _updateDraft(draft.copyWith(showCardBackground: v));
-            widget.appState.setQuoteVisibility(v); // Kart durumunu anında yansıt
           },
         ),
         const SizedBox(height: 6),
