@@ -218,9 +218,9 @@ class _TextSettingsEditorState extends State<TextSettingsEditor> {
               isDense: true,
             ),
             items: _availableFonts.map((f) {
-              TextStyle fs;
-              try { fs = GoogleFonts.getFont(f, fontSize: 14); }
-              catch (_) { fs = const TextStyle(fontSize: 14); }
+              // Kendi yazdığımız eksiksiz eşleştiriciyi kullanarak 
+              // tüm fontların anında kendi stiliyle yüklenmesini sağlıyoruz!
+              final fs = _getGoogleFontLocal(f, textStyle: const TextStyle(fontSize: 15));
               return DropdownMenuItem(value: f, child: Text(f, style: fs));
             }).toList(),
             onChanged: (v) {
@@ -396,5 +396,40 @@ class _TextSettingsEditorState extends State<TextSettingsEditor> {
     );
 
     return items;
+  }
+}
+/// Sanal ölçümler ve menü önizlemeleri için yerel yazı tipi eşleştirici fonksiyon
+TextStyle _getGoogleFontLocal(String fontFamily, {TextStyle? textStyle}) {
+  switch (fontFamily) {
+    case 'Balsamiq Sans': return GoogleFonts.balsamiqSans(textStyle: textStyle);
+    case 'Berkshire Swash': return GoogleFonts.berkshireSwash(textStyle: textStyle);
+    case 'Black Ops One': return GoogleFonts.blackOpsOne(textStyle: textStyle);
+    case 'Caveat': return GoogleFonts.caveat(textStyle: textStyle);
+    case 'Chakra Petch': return GoogleFonts.chakraPetch(textStyle: textStyle);
+    case 'Cormorant Garamond': return GoogleFonts.cormorantGaramond(textStyle: textStyle);
+    case 'Dancing Script': return GoogleFonts.dancingScript(textStyle: textStyle);
+    case 'Exo': return GoogleFonts.exo(textStyle: textStyle);
+    case 'Fira Code': return GoogleFonts.firaCode(textStyle: textStyle);
+    case 'Great Vibes': return GoogleFonts.greatVibes(textStyle: textStyle);
+    case 'Inter': return GoogleFonts.inter(textStyle: textStyle);
+    case 'Kalam': return GoogleFonts.kalam(textStyle: textStyle);
+    case 'Lato': return GoogleFonts.lato(textStyle: textStyle);
+    case 'Merriweather': return GoogleFonts.merriweather(textStyle: textStyle);
+    case 'Montserrat': return GoogleFonts.montserrat(textStyle: textStyle);
+    case 'Noto Sans': return GoogleFonts.notoSans(textStyle: textStyle);
+    case 'Nunito': return GoogleFonts.nunito(textStyle: textStyle);
+    case 'Open Sans': return GoogleFonts.openSans(textStyle: textStyle);
+    case 'Oswald': return GoogleFonts.oswald(textStyle: textStyle);
+    case 'Pacifico': return GoogleFonts.pacifico(textStyle: textStyle);
+    case 'Patrick Hand': return GoogleFonts.patrickHand(textStyle: textStyle);
+    case 'Playfair Display': return GoogleFonts.playfairDisplay(textStyle: textStyle);
+    case 'Poppins': return GoogleFonts.poppins(textStyle: textStyle);
+    case 'Rajdhani': return GoogleFonts.rajdhani(textStyle: textStyle);
+    case 'Raleway': return GoogleFonts.raleway(textStyle: textStyle);
+    case 'Sacramento': return GoogleFonts.sacramento(textStyle: textStyle);
+    case 'Ubuntu': return GoogleFonts.ubuntu(textStyle: textStyle);
+    case 'Ultra': return GoogleFonts.ultra(textStyle: textStyle);
+    case 'Roboto':
+    default: return GoogleFonts.roboto(textStyle: textStyle);
   }
 }
