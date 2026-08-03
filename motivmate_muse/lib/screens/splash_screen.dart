@@ -122,7 +122,7 @@ class _SplashScreenState extends State<SplashScreen> {
     await Future.delayed(const Duration(milliseconds: 300));
 
     // Fontları indir ve hazır olana kadar (max 4 sn) bekle
-    setState(() { _progress = 0.6; _loadingText = "Görsel varlıklar hazırlanıyor..."; });
+    setState(() { _progress = 0.6; _loadingText = "Tasarım detayları hazırlanıyor..."; });
     await _preloadAllFonts(); // Artık await koyuyoruz ki fontlar inmeden ekrana geçmesin!
     await Future.delayed(const Duration(milliseconds: 300));
 
