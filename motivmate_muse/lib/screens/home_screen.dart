@@ -159,6 +159,10 @@ class _HomeScreenState extends State<HomeScreen> {
       if (appState.billingService.isPremium) {
         // Reklamsız akış
         await appState.incrementAdWatchAndRefreshQuote();
+        
+        // Yeni söz indirildikten sonra ekrandaki sırayı ona kaydır
+        appState.cycleSeenQuotes();
+        
         // Söz değiştiği an yeni söze göre hizala
         _adjustAndSetNewQuote(appState.quote.text(appState.settings.appLanguage), appState);
         if (mounted) setState(() {});
@@ -179,6 +183,10 @@ class _HomeScreenState extends State<HomeScreen> {
                   ad.dispose();
                   if (isRewardEarned) {
                     await appState.incrementAdWatchAndRefreshQuote();
+                    
+                    // Yeni söz indirildikten sonra ekrandaki sırayı ona kaydır
+                    appState.cycleSeenQuotes();
+                    
                     // Söz değiştiği an yeni söze göre hizala
                     _adjustAndSetNewQuote(appState.quote.text(appState.settings.appLanguage), appState);
                     if (mounted) setState(() {}); 
