@@ -7,22 +7,13 @@ List<Shadow> _buildShadows(String effectId, Color effectColor) {
   Color c(double multiplier) => effectColor.withValues(alpha: (baseAlpha * multiplier).clamp(0.0, 1.0));
 
   switch (effectId) {
-    case 'shadow_soft':
-      return [Shadow(color: c(1.0), blurRadius: 8, offset: const Offset(2, 2))];
-    case 'shadow_hard':
-      return [Shadow(color: c(1.0), blurRadius: 0, offset: const Offset(3, 3))];
+    case 'shadow': // Sadece "Gölge" (Şiddetini slider ile siz ayarlayacaksınız)
+      return [Shadow(color: c(1.0), blurRadius: 4, offset: const Offset(2, 2))];
     case 'neon':
       return [
         Shadow(color: c(1.0), blurRadius: 4),
         Shadow(color: c(0.8), blurRadius: 12),
         Shadow(color: c(0.6), blurRadius: 24),
-      ];
-    case 'neon_intense': 
-      return [
-        Shadow(color: c(1.0), blurRadius: 2),
-        Shadow(color: c(0.9), blurRadius: 8),
-        Shadow(color: c(0.7), blurRadius: 20),
-        Shadow(color: c(0.5), blurRadius: 40),
       ];
     case 'cloud':
       return [

@@ -12,13 +12,13 @@ const List<String> _availableFonts = [
 ];
 
 const List<Map<String, String>> _textEffects = [
-  {'id': 'none',        'labelTr': 'Efekt Yok',     'labelEn': 'No Effect'},
-  {'id': 'shadow_soft', 'labelTr': 'Yumuşak Gölge', 'labelEn': 'Soft Shadow'},
-  {'id': 'shadow_hard', 'labelTr': 'Sert Gölge',    'labelEn': 'Hard Shadow'},
-  {'id': 'neon',        'labelTr': 'Neon Parlaması', 'labelEn': 'Neon Glow'},
-  {'id': 'cloud',       'labelTr': 'Halo/Bulut',     'labelEn': 'Halo/Cloud'},
-  {'id': 'retro',       'labelTr': 'Retro Gölge',    'labelEn': 'Retro Shadow'},
-  {'id': 'emboss',      'labelTr': 'Kabartma',        'labelEn': 'Emboss'},
+  {'id': 'none',    'labelTr': 'Efekt Yok',      'labelEn': 'No Effect'},
+  {'id': 'shadow',  'labelTr': 'Gölge',          'labelEn': 'Shadow'},
+  {'id': 'outline', 'labelTr': 'Dış Çizgi',      'labelEn': 'Outline'},
+  {'id': 'neon',    'labelTr': 'Neon Parlaması', 'labelEn': 'Neon Glow'},
+  {'id': 'cloud',   'labelTr': 'Halo/Bulut',     'labelEn': 'Halo/Cloud'},
+  {'id': 'retro',   'labelTr': 'Retro Gölge',    'labelEn': 'Retro Shadow'},
+  {'id': 'emboss',  'labelTr': 'Kabartma',       'labelEn': 'Emboss'},
 ];
 
 const List<Color> _presetColors = [
