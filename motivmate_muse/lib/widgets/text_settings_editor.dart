@@ -6,7 +6,7 @@ import '../models/app_settings.dart';
 import 'quote_card.dart';
 
 const List<String> _availableFonts = [
-  'Comic Neue', 'Roboto', 'Playfair Display', 'Lato', 'Montserrat',
+  'Comic Neue', 'Roboto', 'Playfair Display', 'Montserrat',
   'Open Sans', 'Raleway', 'Oswald', 'Merriweather', 'Dancing Script',
   'Pacifico', 'Caveat', 'Comfortaa', 'Lobster', 'Satisfy',
 ];
@@ -413,7 +413,6 @@ TextStyle _getGoogleFontLocal(String fontFamily, {TextStyle? textStyle}) {
     case 'Great Vibes': return GoogleFonts.greatVibes(textStyle: textStyle);
     case 'Inter': return GoogleFonts.inter(textStyle: textStyle);
     case 'Kalam': return GoogleFonts.kalam(textStyle: textStyle);
-    case 'Lato': return GoogleFonts.lato(textStyle: textStyle);
     case 'Merriweather': return GoogleFonts.merriweather(textStyle: textStyle);
     case 'Montserrat': return GoogleFonts.montserrat(textStyle: textStyle);
     case 'Noto Sans': return GoogleFonts.notoSans(textStyle: textStyle);

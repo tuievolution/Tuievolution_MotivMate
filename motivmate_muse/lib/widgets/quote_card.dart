@@ -62,7 +62,6 @@ TextStyle _getGoogleFont(String fontFamily, {TextStyle? textStyle}) {
     case 'Great Vibes': return GoogleFonts.greatVibes(textStyle: textStyle);
     case 'Inter': return GoogleFonts.inter(textStyle: textStyle);
     case 'Kalam': return GoogleFonts.kalam(textStyle: textStyle);
-    case 'Lato': return GoogleFonts.lato(textStyle: textStyle);
     case 'Merriweather': return GoogleFonts.merriweather(textStyle: textStyle);
     case 'Montserrat': return GoogleFonts.montserrat(textStyle: textStyle);
     case 'Noto Sans': return GoogleFonts.notoSans(textStyle: textStyle);

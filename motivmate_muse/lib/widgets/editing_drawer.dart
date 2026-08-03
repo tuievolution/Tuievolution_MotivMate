@@ -421,7 +421,7 @@ class _EditingDrawerState extends State<EditingDrawer> {
 const List<String> _availableFonts = [
   'Balsamiq Sans', 'Berkshire Swash', 'Black Ops One', 'Caveat',
   'Chakra Petch', 'Cormorant Garamond', 'Dancing Script', 'Exo',
-  'Fira Code', 'Great Vibes', 'Inter', 'Kalam', 'Lato', 'Merriweather',
+  'Fira Code', 'Great Vibes', 'Inter', 'Kalam', 'Merriweather',
   'Montserrat', 'Noto Sans', 'Nunito', 'Open Sans', 'Oswald',
   'Pacifico', 'Patrick Hand', 'Playfair Display', 'Poppins',
   'Rajdhani', 'Raleway', 'Roboto', 'Sacramento', 'Ubuntu', 'Ultra'
@@ -646,7 +646,6 @@ class _TextSettingsEditorState extends State<TextSettingsEditor> {
             items: _availableFonts.map((f) {
               TextStyle fs;
               switch (f) {
-                case 'Lato': fs = GoogleFonts.lato(fontSize: 14); break;
                 case 'Open Sans': fs = GoogleFonts.openSans(fontSize: 14); break;
                 case 'Montserrat': fs = GoogleFonts.montserrat(fontSize: 14); break;
                 case 'Oswald': fs = GoogleFonts.oswald(fontSize: 14); break;
@@ -958,7 +957,6 @@ TextStyle _getGoogleFontLocal(String fontFamily, {TextStyle? textStyle}) {
     case 'Great Vibes': return GoogleFonts.greatVibes(textStyle: textStyle);
     case 'Inter': return GoogleFonts.inter(textStyle: textStyle);
     case 'Kalam': return GoogleFonts.kalam(textStyle: textStyle);
-    case 'Lato': return GoogleFonts.lato(textStyle: textStyle);
     case 'Merriweather': return GoogleFonts.merriweather(textStyle: textStyle);
     case 'Montserrat': return GoogleFonts.montserrat(textStyle: textStyle);
     case 'Noto Sans': return GoogleFonts.notoSans(textStyle: textStyle);
