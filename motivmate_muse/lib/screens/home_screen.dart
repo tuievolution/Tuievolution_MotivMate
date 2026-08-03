@@ -148,7 +148,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
     // Güncellemeyi kaydet
     appState.updateSettingsTemporary(updatedSettings);
-    appState.persistSettings(); // Kalıcı olarak ayarları kaydet (opsiyonel)
+    
   }
 
   Future<void> _changeImageAd(BuildContext scaffoldCtx, AppState appState) async {
@@ -157,13 +157,16 @@ class _HomeScreenState extends State<HomeScreen> {
 
     if (canGetNewQuote) {
       if (appState.billingService.isPremium) {
-        // REKLAMSIZ AKIŞ KONTROLÜ
         final oldText = appState.quote.text(appState.settings.appLanguage);
         await appState.incrementAdWatchAndRefreshQuote();
         
-        // Sistem sözü ekrana yansıtmazsa zorla yansıt
-        if (appState.quote.text(appState.settings.appLanguage) == oldText) {
+        // YENİ EKLENEN: Veritabanı işleminin tam oturması için kısa bir es (Çakışma önleyici)
+        await Future.delayed(const Duration(milliseconds: 300));
+        // Sistem sözü ekrana yansıtmazsa yeni söz gelene kadar HIZLI İLERİ SAR
+        int failsafe = 0;
+        while (appState.quote.text(appState.settings.appLanguage) == oldText && failsafe < 15) {
            appState.cycleSeenQuotes();
+           failsafe++;
         }
         
         _adjustAndSetNewQuote(appState.quote.text(appState.settings.appLanguage), appState);
@@ -198,15 +201,21 @@ class _HomeScreenState extends State<HomeScreen> {
                     );
 
                     try {
-                      // Eski sözü hafızaya al
+                      // Reklam kapandıktan sonra telefonun uygulamayı toparlaması (Resume) 
+                      // ve olası sıfırlama işlemlerini atlatmak için kritik bekleme süresi!
+                      await Future.delayed(const Duration(milliseconds: 600));
+
                       final oldText = appState.quote.text(appState.settings.appLanguage);
-                      
-                      // Yeni sözü çek
                       await appState.incrementAdWatchAndRefreshQuote();
                       
-                      // 3. ADIM: ZORUNLU GÜNCELLEME KONTROLÜ (Değişmeme sorununu kesin çözer)
-                      if (appState.quote.text(appState.settings.appLanguage) == oldText) {
+                      // Veritabanının kaydı tamamlaması için kısa es
+                      await Future.delayed(const Duration(milliseconds: 300));
+
+                      // 3. ADIM: ZORUNLU GÜNCELLEME KONTROLÜ (Yeni söz ekrana gelene kadar hızlı ileri sar)
+                      int failsafe = 0;
+                      while (appState.quote.text(appState.settings.appLanguage) == oldText && failsafe < 15) {
                         appState.cycleSeenQuotes();
+                        failsafe++;
                       }
                       
                       // Yeni sözün ölçülerini al ve konumlandır
