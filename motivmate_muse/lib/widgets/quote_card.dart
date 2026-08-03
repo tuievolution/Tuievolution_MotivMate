@@ -69,10 +69,6 @@ TextStyle _getGoogleFont(String fontFamily, {TextStyle? textStyle}) {
     case 'Ubuntu': return GoogleFonts.ubuntu(textStyle: textStyle);
     case 'Poppins': return GoogleFonts.poppins(textStyle: textStyle);
     case 'Nunito': return GoogleFonts.nunito(textStyle: textStyle);
-    case 'Comic Neue': return GoogleFonts.comicNeue(textStyle: textStyle);
-    case 'Pacifico': return GoogleFonts.pacifico(textStyle: textStyle);
-    case 'Caveat': return GoogleFonts.caveat(textStyle: textStyle);
-    case 'Dancing Script': return GoogleFonts.dancingScript(textStyle: textStyle);
     case 'Roboto':
     default: return GoogleFonts.roboto(textStyle: textStyle);
   }
