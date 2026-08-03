@@ -7,6 +7,7 @@ import 'package:provider/provider.dart';
 import 'package:screenshot/screenshot.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:google_mobile_ads/google_mobile_ads.dart' as ads;
 
 import '../app_state.dart';
 import '../models/theme_presets.dart';
@@ -149,6 +150,7 @@ class _HomeScreenState extends State<HomeScreen> {
         final oldText = appState.quote.text(appState.settings.appLanguage);
         await appState.incrementAdWatchAndRefreshQuote();
         
+        // Veritabanı işleminin tam oturması için kısa bir es
         await Future.delayed(const Duration(milliseconds: 300));
         int failsafe = 0;
         while (appState.quote.text(appState.settings.appLanguage) == oldText && failsafe < 15) {
@@ -159,35 +161,68 @@ class _HomeScreenState extends State<HomeScreen> {
         _adjustAndSetNewQuote(appState.quote.text(appState.settings.appLanguage), appState);
         if (mounted) setState(() {});
       } else {
-        // ── YENİ: TEMİZLENMİŞ REKLAM GÖSTERİMİ ──
-        appState.showRewardedAd(
+        // REKLAM YÜKLENİRKEN EKRANI KİLİTLE
+        showDialog(
           context: scaffoldCtx,
-          onRewardEarned: () async {
-            // Reklam bittikten sonra yeni söz için kısa bir bekleme barı
-            showDialog(
-              context: scaffoldCtx,
-              barrierDismissible: false,
-              builder: (ctx) => const Center(child: CircularProgressIndicator(color: Colors.white)),
-            );
+          barrierDismissible: false,
+          builder: (ctx) => const Center(child: CircularProgressIndicator(color: Colors.white)),
+        );
 
-            try {
-              await Future.delayed(const Duration(milliseconds: 600));
-              final oldText = appState.quote.text(appState.settings.appLanguage);
-              await appState.incrementAdWatchAndRefreshQuote();
+        ads.RewardedAd.load(
+          adUnitId: 'ca-app-pub-3940256099942544/5224354917',
+          request: const ads.AdRequest(),
+          rewardedAdLoadCallback: ads.RewardedAdLoadCallback(
+            onAdLoaded: (ad) {
+              if (scaffoldCtx.mounted) Navigator.of(scaffoldCtx).pop(); 
               
-              await Future.delayed(const Duration(milliseconds: 300));
-              int failsafe = 0;
-              while (appState.quote.text(appState.settings.appLanguage) == oldText && failsafe < 15) {
-                appState.cycleSeenQuotes();
-                failsafe++;
-              }
-              
-              _adjustAndSetNewQuote(appState.quote.text(appState.settings.appLanguage), appState);
-            } finally {
-              if (scaffoldCtx.mounted) Navigator.of(scaffoldCtx).pop();
-              if (mounted) setState(() {}); 
-            }
-          },
+              bool isRewardEarned = false;
+
+              ad.fullScreenContentCallback = ads.FullScreenContentCallback(
+                onAdDismissedFullScreenContent: (ad) async {
+                  ad.dispose();
+                  if (isRewardEarned) {
+                    showDialog(
+                      context: scaffoldCtx,
+                      barrierDismissible: false,
+                      builder: (ctx) => const Center(child: CircularProgressIndicator(color: Colors.white)),
+                    );
+
+                    try {
+                      await Future.delayed(const Duration(milliseconds: 600));
+                      final oldText = appState.quote.text(appState.settings.appLanguage);
+                      await appState.incrementAdWatchAndRefreshQuote();
+                      
+                      await Future.delayed(const Duration(milliseconds: 300));
+                      int failsafe = 0;
+                      while (appState.quote.text(appState.settings.appLanguage) == oldText && failsafe < 15) {
+                        appState.cycleSeenQuotes();
+                        failsafe++;
+                      }
+                      
+                      _adjustAndSetNewQuote(appState.quote.text(appState.settings.appLanguage), appState);
+                    } finally {
+                      if (scaffoldCtx.mounted) Navigator.of(scaffoldCtx).pop();
+                      if (mounted) setState(() {}); 
+                    }
+                  }
+                },
+                onAdFailedToShowFullScreenContent: (ad, error) {
+                  ad.dispose();
+                },
+              );
+
+              ad.show(onUserEarnedReward: (ad, reward) {
+                isRewardEarned = true;
+              });
+            },
+            onAdFailedToLoad: (error) {
+              if (scaffoldCtx.mounted) Navigator.of(scaffoldCtx).pop(); 
+              if (!scaffoldCtx.mounted) return;
+              ScaffoldMessenger.of(scaffoldCtx).showSnackBar(
+                const SnackBar(content: Text('Reklam bağlantı hatası. İnternetinizi kontrol edin.')),
+              );
+            },
+          ),
         );
       }
     } else {
@@ -223,12 +258,36 @@ class _HomeScreenState extends State<HomeScreen> {
     if (isPremium) {
       await executeCapture();
     } else {
-      // ── YENİ: TEMİZLENMİŞ REKLAM İLE İNDİRME ──
-      appState.showRewardedAd(
-        context: scaffoldCtx,
-        onRewardEarned: () {
-          executeCapture();
-        },
+      ScaffoldMessenger.of(scaffoldCtx).showSnackBar(
+        const SnackBar(content: Text('İndirme için reklam yükleniyor...'), duration: Duration(seconds: 1)),
+      );
+      
+      ads.RewardedAd.load(
+        adUnitId: 'ca-app-pub-3940256099942544/5224354917',
+        request: const ads.AdRequest(),
+        rewardedAdLoadCallback: ads.RewardedAdLoadCallback(
+          onAdLoaded: (ad) {
+            bool isRewardEarned = false;
+
+            ad.fullScreenContentCallback = ads.FullScreenContentCallback(
+              onAdDismissedFullScreenContent: (ad) {
+                ad.dispose();
+                if (isRewardEarned) executeCapture();
+              },
+              onAdFailedToShowFullScreenContent: (ad, error) {
+                ad.dispose();
+                executeCapture(); 
+              },
+            );
+
+            ad.show(onUserEarnedReward: (ad, reward) {
+              isRewardEarned = true;
+            });
+          },
+          onAdFailedToLoad: (error) {
+            executeCapture(); 
+          },
+        ),
       );
     }
   }

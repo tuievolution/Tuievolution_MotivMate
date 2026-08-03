@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:google_mobile_ads/google_mobile_ads.dart'; // EKLENDİ: Google Ads Paketi
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'models/app_settings.dart';
@@ -34,10 +33,6 @@ class AppState extends ChangeNotifier {
   int _todayAdCount = 0;
   bool get isLimitReached => _todayAdCount >= 3;
 
-  // ── YENİ: REKLAM ÖNDEN YÜKLEME (PRELOAD) DEĞİŞKENLERİ ──
-  RewardedAd? _preloadedAd;
-  bool _isAdLoading = false;
-
   AppState({
     required this.storageService,
     required this.quoteService,
@@ -48,6 +43,7 @@ class AppState extends ChangeNotifier {
   })  : settings = initialSettings,
         quote = initialQuote,
         isQuoteVisible = true {
+    // İlk açılışta hafızadaki kalıcı verileri yükle
     _loadPersistentSeenQuotes();
   }
 
@@ -55,89 +51,6 @@ class AppState extends ChangeNotifier {
     _lastPopupShownAt = await storageService.loadLastPopupShownAt();
     _todayAdCount = await getAdsWatchedToday();
     await _loadPersistentSeenQuotes();
-    
-    // Uygulama ayağa kalkar kalkmaz ilk reklamı arkada sessizce indirmeye başla
-    preloadRewardedAd();
-  }
-
-  // ── YENİ: REKLAMI ARKA PLANDA İNDİRİP HAZIRDA BEKLETEN FONKSİYON ──
-  void preloadRewardedAd() {
-    if (_isAdLoading) return;
-    _isAdLoading = true;
-
-    RewardedAd.load(
-      adUnitId: 'ca-app-pub-3940256099942544/5224354917', // Test ID'si (Canlıya çıkarken kendi ID'nle değiştir)
-      request: const AdRequest(),
-      rewardedAdLoadCallback: RewardedAdLoadCallback(
-        onAdLoaded: (ad) {
-          _preloadedAd = ad;
-          _isAdLoading = false;
-          debugPrint('Reklam arka planda başarıyla yüklendi ve hazır bekliyor.');
-        },
-        onAdFailedToLoad: (error) {
-          _preloadedAd = null;
-          _isAdLoading = false;
-          debugPrint('Reklam yüklenemedi: $error');
-          // Yüklenemezse 15 saniye sonra tekrar dener
-          Future.delayed(const Duration(seconds: 15), preloadRewardedAd);
-        },
-      ),
-    );
-  }
-
-  // ── YENİ: HAZIR REKLAMI ANINDA GÖSTEREN MERKEZİ FONKSİYON ──
-  void showRewardedAd({
-    required BuildContext context,
-    required VoidCallback onRewardEarned,
-  }) {
-    if (_preloadedAd != null) {
-      // 1. Durum: Reklam zaten arkada indi ve hazır! 0 saniye gecikmeyle göster.
-      _preloadedAd!.fullScreenContentCallback = FullScreenContentCallback(
-        onAdDismissedFullScreenContent: (ad) {
-          ad.dispose();
-          _preloadedAd = null;
-          preloadRewardedAd(); // Kullanıcı reklamı kapatır kapatmaz yenisini arkada indirmeye başla!
-        },
-        onAdFailedToShowFullScreenContent: (ad, error) {
-          ad.dispose();
-          _preloadedAd = null;
-          preloadRewardedAd();
-        },
-      );
-
-      _preloadedAd!.show(onUserEarnedReward: (ad, reward) {
-        onRewardEarned(); // Ödül kazanıldı işlemini tetikle
-      });
-
-      _preloadedAd = null; 
-    } else {
-      // 2. Durum: İnternet yavaştı ve reklam yetişemedi. Fallback (Bekleme) ekranı gösterip anlık indir.
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (ctx) => const Center(child: CircularProgressIndicator(color: Colors.white)),
-      );
-
-      RewardedAd.load(
-        adUnitId: 'ca-app-pub-3940256099942544/5224354917',
-        request: const AdRequest(),
-        rewardedAdLoadCallback: RewardedAdLoadCallback(
-          onAdLoaded: (ad) {
-            Navigator.of(context).pop(); // Yükleme barını kapat
-            ad.show(onUserEarnedReward: (_, __) {
-              onRewardEarned();
-            });
-            preloadRewardedAd(); // Yenisini hazırlamaya başla
-          },
-          onAdFailedToLoad: (error) {
-            Navigator.of(context).pop(); // Yükleme barını kapat
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Reklam yüklenemedi. Lütfen internet bağlantınızı kontrol edin.')),
-            );
-          },
-        ),
-      );
-    }
   }
 
   // Kalıcı Hafızadan Görülen Sözleri Yükleme Fonksiyonu
@@ -161,6 +74,7 @@ class AppState extends ChangeNotifier {
             imageAsset: parts[4], 
           ));
         } else if (parts.length >= 4) {
+          // Eski format yedek uyumluluğu
           _seenQuotes.add(Quote(
             textTr: parts[0],
             textEn: parts[1],
