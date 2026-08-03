@@ -21,14 +21,21 @@ Future<void> _preloadAllFonts() async {
     'Rajdhani', 'Raleway', 'Roboto', 'Sacramento', 'Ubuntu', 'Ultra'
   ];
 
-  // Her fontu arka planda sessizce indir ve cihaza kaydet
+  // 1. Tüm fontları arka planda indirme sırasına al
   for (String fontName in availableFonts) {
     try {
       GoogleFonts.getFont(fontName);
     } catch (e) {
-      // İnternet anlık koparsa veya bir font hata verirse uygulamanın çökmesini engeller
       debugPrint('Font yüklenemedi: $fontName');
     }
+  }
+
+  // 2. YENİ EKLENEN KRİTİK KISIM: Sıraya alınan fontların inmesini bekle.
+  // Kullanıcıyı sonsuza kadar bekletmemek için 4 saniyelik zaman aşımı koyuyoruz.
+  try {
+    await GoogleFonts.pendingFonts().timeout(const Duration(seconds: 4));
+  } catch (e) {
+    debugPrint('Bazı fontlar yavaş internet sebebiyle yetişemedi, arkada inmeye devam edecek.');
   }
 }
 
@@ -114,9 +121,9 @@ class _SplashScreenState extends State<SplashScreen> {
     final initialQuote = await quoteService.getRandomQuote(language: initialSettings.appLanguage);
     await Future.delayed(const Duration(milliseconds: 300));
 
-    // Fontları arka planda indirmeye başla
+    // Fontları indir ve hazır olana kadar (max 4 sn) bekle
     setState(() { _progress = 0.6; _loadingText = "Görsel varlıklar hazırlanıyor..."; });
-    _preloadAllFonts(); // Başına bilerek await koymuyoruz ki ekranı dondurup beklemesin, arkada insin.
+    await _preloadAllFonts(); // Artık await koyuyoruz ki fontlar inmeden ekrana geçmesin!
     await Future.delayed(const Duration(milliseconds: 300));
 
     setState(() { _progress = 0.8; _loadingText = "Sistem bildirimleri ayarlanıyor..."; });
