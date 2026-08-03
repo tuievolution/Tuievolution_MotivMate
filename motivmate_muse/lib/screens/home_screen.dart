@@ -157,18 +157,23 @@ class _HomeScreenState extends State<HomeScreen> {
 
     if (canGetNewQuote) {
       if (appState.billingService.isPremium) {
-        // Reklamsız akış
+        // REKLAMSIZ AKIŞ KONTROLÜ
+        final oldText = appState.quote.text(appState.settings.appLanguage);
         await appState.incrementAdWatchAndRefreshQuote();
         
-        // Yeni söz indirildikten sonra ekrandaki sırayı ona kaydır
-        appState.cycleSeenQuotes();
+        // Sistem sözü ekrana yansıtmazsa zorla yansıt
+        if (appState.quote.text(appState.settings.appLanguage) == oldText) {
+           appState.cycleSeenQuotes();
+        }
         
-        // Söz değiştiği an yeni söze göre hizala
         _adjustAndSetNewQuote(appState.quote.text(appState.settings.appLanguage), appState);
         if (mounted) setState(() {});
       } else {
-        ScaffoldMessenger.of(scaffoldCtx).showSnackBar(
-          const SnackBar(content: Text('Reklam yükleniyor...'), duration: Duration(seconds: 1)),
+        // 1. ADIM: REKLAM YÜKLENİRKEN EKRANI KİLİTLE (Kopukluğu ve art arda tıklamayı önler)
+        showDialog(
+          context: scaffoldCtx,
+          barrierDismissible: false,
+          builder: (ctx) => const Center(child: CircularProgressIndicator(color: Colors.white)),
         );
 
         ads.RewardedAd.load(
@@ -176,20 +181,41 @@ class _HomeScreenState extends State<HomeScreen> {
           request: const ads.AdRequest(),
           rewardedAdLoadCallback: ads.RewardedAdLoadCallback(
             onAdLoaded: (ad) {
+              // Reklam başarıyla yüklendi, yükleniyor ikonunu kapat ve reklamı aç
+              if (scaffoldCtx.mounted) Navigator.of(scaffoldCtx).pop(); 
+              
               bool isRewardEarned = false;
 
               ad.fullScreenContentCallback = ads.FullScreenContentCallback(
                 onAdDismissedFullScreenContent: (ad) async {
                   ad.dispose();
                   if (isRewardEarned) {
-                    await appState.incrementAdWatchAndRefreshQuote();
-                    
-                    // Yeni söz indirildikten sonra ekrandaki sırayı ona kaydır
-                    appState.cycleSeenQuotes();
-                    
-                    // Söz değiştiği an yeni söze göre hizala
-                    _adjustAndSetNewQuote(appState.quote.text(appState.settings.appLanguage), appState);
-                    if (mounted) setState(() {}); 
+                    // 2. ADIM: YENİ SÖZ İNDİRİLİRKEN BEKLET (İnternet gecikmesinde eski yazının kalmasını önler)
+                    showDialog(
+                      context: scaffoldCtx,
+                      barrierDismissible: false,
+                      builder: (ctx) => const Center(child: CircularProgressIndicator(color: Colors.white)),
+                    );
+
+                    try {
+                      // Eski sözü hafızaya al
+                      final oldText = appState.quote.text(appState.settings.appLanguage);
+                      
+                      // Yeni sözü çek
+                      await appState.incrementAdWatchAndRefreshQuote();
+                      
+                      // 3. ADIM: ZORUNLU GÜNCELLEME KONTROLÜ (Değişmeme sorununu kesin çözer)
+                      if (appState.quote.text(appState.settings.appLanguage) == oldText) {
+                        appState.cycleSeenQuotes();
+                      }
+                      
+                      // Yeni sözün ölçülerini al ve konumlandır
+                      _adjustAndSetNewQuote(appState.quote.text(appState.settings.appLanguage), appState);
+                    } finally {
+                      // İşlem bittiğinde yükleme ekranını kapat ve arayüzü tazele
+                      if (scaffoldCtx.mounted) Navigator.of(scaffoldCtx).pop();
+                      if (mounted) setState(() {}); 
+                    }
                   }
                 },
                 onAdFailedToShowFullScreenContent: (ad, error) {
@@ -202,6 +228,8 @@ class _HomeScreenState extends State<HomeScreen> {
               });
             },
             onAdFailedToLoad: (error) {
+              // Hata olursa (internet yoksa) sonsuz yüklenmeyi durdur ve uyarı ver
+              if (scaffoldCtx.mounted) Navigator.of(scaffoldCtx).pop(); 
               if (!scaffoldCtx.mounted) return;
               ScaffoldMessenger.of(scaffoldCtx).showSnackBar(
                 const SnackBar(content: Text('Reklam bağlantı hatası. İnternetinizi kontrol edin.')),
@@ -211,13 +239,11 @@ class _HomeScreenState extends State<HomeScreen> {
         );
       }
     } else {
-      // Limit Doldu: Reklamsız hafızadaki sözler arası geçiş yap
+      // GÜNLÜK LİMİT DOLDUYSA ÇALIŞAN KISIM
       appState.cycleSeenQuotes();
-      // Döngüyle dönen eski söze göre de hizala
       _adjustAndSetNewQuote(appState.quote.text(appState.settings.appLanguage), appState);
       if (mounted) setState(() {});
       
-      // GÜNCELLEME: SnackBar yerine üstten açılan fonksiyon çağrıldı
       _showTopWarning(
         scaffoldCtx,
         appState.settings.appLanguage == 'en' 
