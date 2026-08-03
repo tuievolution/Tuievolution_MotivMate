@@ -177,7 +177,7 @@ class _EditingDrawerState extends State<EditingDrawer> {
         Slider(
           value: draft.blurSigma,
           min: 0,
-          max: 25,
+          max: 10,
           divisions: 50,
           label: draft.blurSigma.toStringAsFixed(0),
           onChanged: (v) {
