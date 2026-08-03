@@ -63,8 +63,14 @@ class NotificationService {
       channelDescription: 'MotivMood daily motivation',
       importance: Importance.high,
       priority: Priority.high,
-      // YENİ: Metin uzunsa bildirimin aşağı kaydırılarak (genişletilerek) tam okunmasını sağlar
-      styleInformation: bodyText != null ? BigTextStyleInformation(bodyText) : null,
+      // GÜNCELLEME: Uzun metinlerin aşağı kaydırılarak (genişletilerek) tam okunmasını sağlar. 
+      // contentTitle eklenerek genişletildiğinde başlığın kaybolması engellendi.
+      styleInformation: bodyText != null 
+          ? BigTextStyleInformation(
+              bodyText,
+              contentTitle: 'MotivMood',
+            ) 
+          : null,
     );
 
     const iosDetails = DarwinNotificationDetails();

@@ -1,21 +1,19 @@
-import 'dart:async'; // Zamanlayıcı için eklendi
+import 'dart:async';
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:gal/gal.dart';
-import 'package:google_mobile_ads/google_mobile_ads.dart' as ads;
 import 'package:provider/provider.dart';
 import 'package:screenshot/screenshot.dart';
+import 'package:cached_network_image/cached_network_image.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 import '../app_state.dart';
 import '../models/theme_presets.dart';
 import '../widgets/editing_drawer.dart';
 import '../widgets/quote_card.dart';
 import '../widgets/settings_drawer.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 import '../cache_limit.dart';
-
-import 'package:google_fonts/google_fonts.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -52,7 +50,6 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  // Üstten Kayan Özel Bildirim Barı (Overlay) ──
   void _showTopWarning(BuildContext context, String message) {
     final overlay = Overlay.of(context);
     late OverlayEntry overlayEntry;
@@ -97,18 +94,15 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
-  // Yeni söz geldiğinde kartı ekrana göre otomatik boyutlandırır
   void _adjustAndSetNewQuote(String newText, AppState appState) {
     final screenSize = MediaQuery.of(context).size;
     final currentSettings = appState.settings;
 
-    // 1. Kullanılabilir net alanı hesapla (Genişlik ve Yükseklik)
     final double actualMaxWidth = (currentSettings.cardWidthN * screenSize.width) - 36.0; 
     final double availableHeight = ((1.0 - currentSettings.cardTopN) * screenSize.height) - 140.0;
 
     double safeFontSize = currentSettings.fontSize;
     
-    // 2. Yazı tipi stilini al (Hata vermemesi için GoogleFonts'un dinamik yapısı kullanıldı)
     TextStyle getStyle(double fs) {
       try {
         return GoogleFonts.getFont(currentSettings.fontFamily, fontSize: fs, fontWeight: FontWeight.w500, height: 1.25);
@@ -117,7 +111,6 @@ class _HomeScreenState extends State<HomeScreen> {
       }
     }
 
-    // 3. Yazı ekrana sığana kadar puntoyu küçült
     while (safeFontSize > 12.0) {
       final tp = TextPainter(
         text: TextSpan(text: '"$newText"', style: getStyle(safeFontSize)),
@@ -128,27 +121,23 @@ class _HomeScreenState extends State<HomeScreen> {
       tp.layout(maxWidth: actualMaxWidth.clamp(80.0, screenSize.width));
       
       if (tp.height <= availableHeight) {
-        break; // Yazı sığdı, döngüyü kır!
+        break; 
       }
-      safeFontSize -= 2.0; // Sığmadıysa puntoyu küçült
+      safeFontSize -= 2.0; 
     }
 
-    // 4. Eğer söz aşırı uzunsa (punto çok küçüldüyse), kartı ekranın daha üstüne taşı
     double targetTopN = currentSettings.cardTopN;
     if (safeFontSize < 18.0) {
-      targetTopN = 0.25; // Kartı yukarı çekip aşağıda boşluk yaratır
-      safeFontSize = 18.0; // Puntoyu en az 18'de tutarak okunabilirliği korur
+      targetTopN = 0.25; 
+      safeFontSize = 18.0; 
     }
 
-    // 5. Ayarları yeni font ve konuma göre güncelle
     final updatedSettings = currentSettings.copyWith(
       fontSize: safeFontSize,
       cardTopN: targetTopN,
     );
 
-    // Güncellemeyi kaydet
     appState.updateSettingsTemporary(updatedSettings);
-    
   }
 
   Future<void> _changeImageAd(BuildContext scaffoldCtx, AppState appState) async {
@@ -160,9 +149,7 @@ class _HomeScreenState extends State<HomeScreen> {
         final oldText = appState.quote.text(appState.settings.appLanguage);
         await appState.incrementAdWatchAndRefreshQuote();
         
-        // YENİ EKLENEN: Veritabanı işleminin tam oturması için kısa bir es (Çakışma önleyici)
         await Future.delayed(const Duration(milliseconds: 300));
-        // Sistem sözü ekrana yansıtmazsa yeni söz gelene kadar HIZLI İLERİ SAR
         int failsafe = 0;
         while (appState.quote.text(appState.settings.appLanguage) == oldText && failsafe < 15) {
            appState.cycleSeenQuotes();
@@ -172,83 +159,38 @@ class _HomeScreenState extends State<HomeScreen> {
         _adjustAndSetNewQuote(appState.quote.text(appState.settings.appLanguage), appState);
         if (mounted) setState(() {});
       } else {
-        // 1. ADIM: REKLAM YÜKLENİRKEN EKRANI KİLİTLE (Kopukluğu ve art arda tıklamayı önler)
-        showDialog(
+        // ── YENİ: TEMİZLENMİŞ REKLAM GÖSTERİMİ ──
+        appState.showRewardedAd(
           context: scaffoldCtx,
-          barrierDismissible: false,
-          builder: (ctx) => const Center(child: CircularProgressIndicator(color: Colors.white)),
-        );
+          onRewardEarned: () async {
+            // Reklam bittikten sonra yeni söz için kısa bir bekleme barı
+            showDialog(
+              context: scaffoldCtx,
+              barrierDismissible: false,
+              builder: (ctx) => const Center(child: CircularProgressIndicator(color: Colors.white)),
+            );
 
-        ads.RewardedAd.load(
-          adUnitId: 'ca-app-pub-3940256099942544/5224354917',
-          request: const ads.AdRequest(),
-          rewardedAdLoadCallback: ads.RewardedAdLoadCallback(
-            onAdLoaded: (ad) {
-              // Reklam başarıyla yüklendi, yükleniyor ikonunu kapat ve reklamı aç
-              if (scaffoldCtx.mounted) Navigator.of(scaffoldCtx).pop(); 
+            try {
+              await Future.delayed(const Duration(milliseconds: 600));
+              final oldText = appState.quote.text(appState.settings.appLanguage);
+              await appState.incrementAdWatchAndRefreshQuote();
               
-              bool isRewardEarned = false;
-
-              ad.fullScreenContentCallback = ads.FullScreenContentCallback(
-                onAdDismissedFullScreenContent: (ad) async {
-                  ad.dispose();
-                  if (isRewardEarned) {
-                    // 2. ADIM: YENİ SÖZ İNDİRİLİRKEN BEKLET (İnternet gecikmesinde eski yazının kalmasını önler)
-                    showDialog(
-                      context: scaffoldCtx,
-                      barrierDismissible: false,
-                      builder: (ctx) => const Center(child: CircularProgressIndicator(color: Colors.white)),
-                    );
-
-                    try {
-                      // Reklam kapandıktan sonra telefonun uygulamayı toparlaması (Resume) 
-                      // ve olası sıfırlama işlemlerini atlatmak için kritik bekleme süresi!
-                      await Future.delayed(const Duration(milliseconds: 600));
-
-                      final oldText = appState.quote.text(appState.settings.appLanguage);
-                      await appState.incrementAdWatchAndRefreshQuote();
-                      
-                      // Veritabanının kaydı tamamlaması için kısa es
-                      await Future.delayed(const Duration(milliseconds: 300));
-
-                      // 3. ADIM: ZORUNLU GÜNCELLEME KONTROLÜ (Yeni söz ekrana gelene kadar hızlı ileri sar)
-                      int failsafe = 0;
-                      while (appState.quote.text(appState.settings.appLanguage) == oldText && failsafe < 15) {
-                        appState.cycleSeenQuotes();
-                        failsafe++;
-                      }
-                      
-                      // Yeni sözün ölçülerini al ve konumlandır
-                      _adjustAndSetNewQuote(appState.quote.text(appState.settings.appLanguage), appState);
-                    } finally {
-                      // İşlem bittiğinde yükleme ekranını kapat ve arayüzü tazele
-                      if (scaffoldCtx.mounted) Navigator.of(scaffoldCtx).pop();
-                      if (mounted) setState(() {}); 
-                    }
-                  }
-                },
-                onAdFailedToShowFullScreenContent: (ad, error) {
-                  ad.dispose();
-                },
-              );
-
-              ad.show(onUserEarnedReward: (ad, reward) {
-                isRewardEarned = true;
-              });
-            },
-            onAdFailedToLoad: (error) {
-              // Hata olursa (internet yoksa) sonsuz yüklenmeyi durdur ve uyarı ver
-              if (scaffoldCtx.mounted) Navigator.of(scaffoldCtx).pop(); 
-              if (!scaffoldCtx.mounted) return;
-              ScaffoldMessenger.of(scaffoldCtx).showSnackBar(
-                const SnackBar(content: Text('Reklam bağlantı hatası. İnternetinizi kontrol edin.')),
-              );
-            },
-          ),
+              await Future.delayed(const Duration(milliseconds: 300));
+              int failsafe = 0;
+              while (appState.quote.text(appState.settings.appLanguage) == oldText && failsafe < 15) {
+                appState.cycleSeenQuotes();
+                failsafe++;
+              }
+              
+              _adjustAndSetNewQuote(appState.quote.text(appState.settings.appLanguage), appState);
+            } finally {
+              if (scaffoldCtx.mounted) Navigator.of(scaffoldCtx).pop();
+              if (mounted) setState(() {}); 
+            }
+          },
         );
       }
     } else {
-      // GÜNLÜK LİMİT DOLDUYSA ÇALIŞAN KISIM
       appState.cycleSeenQuotes();
       _adjustAndSetNewQuote(appState.quote.text(appState.settings.appLanguage), appState);
       if (mounted) setState(() {});
@@ -281,36 +223,12 @@ class _HomeScreenState extends State<HomeScreen> {
     if (isPremium) {
       await executeCapture();
     } else {
-      ScaffoldMessenger.of(scaffoldCtx).showSnackBar(
-        const SnackBar(content: Text('İndirme için reklam yükleniyor...'), duration: Duration(seconds: 1)),
-      );
-      
-      ads.RewardedAd.load(
-        adUnitId: 'ca-app-pub-3940256099942544/5224354917',
-        request: const ads.AdRequest(),
-        rewardedAdLoadCallback: ads.RewardedAdLoadCallback(
-          onAdLoaded: (ad) {
-            bool isRewardEarned = false;
-
-            ad.fullScreenContentCallback = ads.FullScreenContentCallback(
-              onAdDismissedFullScreenContent: (ad) {
-                ad.dispose();
-                if (isRewardEarned) executeCapture();
-              },
-              onAdFailedToShowFullScreenContent: (ad, error) {
-                ad.dispose();
-                executeCapture(); 
-              },
-            );
-
-            ad.show(onUserEarnedReward: (ad, reward) {
-              isRewardEarned = true;
-            });
-          },
-          onAdFailedToLoad: (error) {
-            executeCapture(); 
-          },
-        ),
+      // ── YENİ: TEMİZLENMİŞ REKLAM İLE İNDİRME ──
+      appState.showRewardedAd(
+        context: scaffoldCtx,
+        onRewardEarned: () {
+          executeCapture();
+        },
       );
     }
   }
@@ -544,7 +462,6 @@ class _HomeScreenState extends State<HomeScreen> {
                               onTap: () => _saveCurrentView(scaffoldContext, appState, preset),
                             ),
                             const SizedBox(width: 10),
-                            // GÜNCELLEME: Limit dolunca ikon otomatik olarak tekrar eden simgeye dönüyor!
                             _ActionButton(
                               icon: appState.isLimitReached ? Icons.repeat_rounded : Icons.shuffle,
                               onTap: () => _changeImageAd(scaffoldContext, appState),
