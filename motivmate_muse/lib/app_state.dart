@@ -254,48 +254,68 @@ class AppState extends ChangeNotifier {
           break;
       }
 
-      if (!shouldShow) return;
+      if (!shouldShow) {
+        _popupInFlight = false; // Erken çıkışta kilidi aç
+        return;
+      }
 
       _lastPopupShownAt = now;
       await storageService.saveLastPopupShownAt(now);
 
-      if (!context.mounted) return;
-      await showDialog<void>(
-        context: context,
-        barrierDismissible: true,
-        builder: (ctx) {
-          return Dialog(
-            backgroundColor: Colors.transparent,
-            insetPadding: const EdgeInsets.symmetric(horizontal: 18),
-            child: Center(
-              child: Material(
-                type: MaterialType.transparency,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    QuoteCard(
-                      text: quote.text(settings.appLanguage),
-                      author: quote.author(settings.appLanguage),
-                      cardBackgroundColor: Color(settings.cardBackgroundColorValue),
-                      quoteTextColor: Color(settings.textColorValue),
-                      opacity: settings.cardOpacity,
-                      fontSize: settings.fontSize,
-                      fontFamily: settings.fontFamily,
+      if (!context.mounted) {
+        _popupInFlight = false;
+        return;
+      }
+
+      // 1. ADIM: Sistemin (arayüzün ve lokalizasyonların) tam olarak hazır olduğundan emin ol!
+      // Bu ufak gecikme "No MaterialLocalizations found" çökmesini kesin olarak engeller.
+      WidgetsBinding.instance.addPostFrameCallback((_) async {
+        if (!context.mounted) {
+          _popupInFlight = false;
+          return;
+        }
+
+        try {
+          await showDialog<void>(
+            context: context,
+            barrierDismissible: true,
+            builder: (ctx) {
+              return Dialog(
+                backgroundColor: Colors.transparent,
+                insetPadding: const EdgeInsets.symmetric(horizontal: 18),
+                child: Center(
+                  child: Material(
+                    type: MaterialType.transparency,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        QuoteCard(
+                          text: quote.text(settings.appLanguage),
+                          author: quote.author(settings.appLanguage),
+                          cardBackgroundColor: Color(settings.cardBackgroundColorValue),
+                          quoteTextColor: Color(settings.textColorValue),
+                          opacity: settings.cardOpacity,
+                          fontSize: settings.fontSize,
+                          fontFamily: settings.fontFamily,
+                        ),
+                        const SizedBox(height: 10),
+                        TextButton.icon(
+                          onPressed: () => Navigator.of(ctx).pop(),
+                          icon: const Icon(Icons.close),
+                          label: const Text('Kapat'),
+                        ),
+                      ],
                     ),
-                    const SizedBox(height: 10),
-                    TextButton.icon(
-                      onPressed: () => Navigator.of(ctx).pop(),
-                      icon: const Icon(Icons.close),
-                      label: const Text('Kapat'),
-                    ),
-                  ],
+                  ),
                 ),
-              ),
-            ),
+              );
+            },
           );
-        },
-      );
-    } finally {
+        } finally {
+          _popupInFlight = false; // Popup kapatıldığında (veya dışarı tıklandığında) kilidi kalıcı olarak aç
+        }
+      });
+    } catch (e) {
       _popupInFlight = false;
     }
   }
@@ -313,7 +333,6 @@ class AppState extends ChangeNotifier {
     }
 
     unawaited(() async {
-      // DÜZELTİLDİ: bodyNotificationsEnabled yerine barNotificationsEnabled kullanıldı
       if (settings.barNotificationsEnabled) {
         await rescheduleBarNotifications();
       }
@@ -335,4 +354,5 @@ class AppState extends ChangeNotifier {
     _addCurrentQuoteToSeen();
     notifyListeners();
   }
+
 }
