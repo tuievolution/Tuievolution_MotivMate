@@ -9,6 +9,29 @@ import '../services/quote_service.dart';
 import '../services/notification_service.dart';
 import '../services/billing_service.dart';
 
+import 'package:google_fonts/google_fonts.dart';
+
+Future<void> _preloadAllFonts() async {
+  const List<String> availableFonts = [
+    'Balsamiq Sans', 'Berkshire Swash', 'Black Ops One', 'Caveat',
+    'Chakra Petch', 'Cormorant Garamond', 'Dancing Script', 'Exo',
+    'Fira Code', 'Great Vibes', 'Inter', 'Kalam', 'Lato', 'Merriweather',
+    'Montserrat', 'Noto Sans', 'Nunito', 'Open Sans', 'Oswald',
+    'Pacifico', 'Patrick Hand', 'Playfair Display', 'Poppins',
+    'Rajdhani', 'Raleway', 'Roboto', 'Sacramento', 'Ubuntu', 'Ultra'
+  ];
+
+  // Her fontu arka planda sessizce indir ve cihaza kaydet
+  for (String fontName in availableFonts) {
+    try {
+      GoogleFonts.getFont(fontName);
+    } catch (e) {
+      // İnternet anlık koparsa veya bir font hata verirse uygulamanın çökmesini engeller
+      debugPrint('Font yüklenemedi: $fontName');
+    }
+  }
+}
+
 class SplashScreen extends StatefulWidget {
   final void Function(AppState appState) onInitializationComplete;
 
@@ -86,12 +109,17 @@ class _SplashScreenState extends State<SplashScreen> {
     final initialSettings = await storageService.loadSettings();
     await Future.delayed(const Duration(milliseconds: 300)); 
 
-    setState(() { _progress = 0.5; _loadingText = "Günün motivasyonu hazırlanıyor..."; });
+    setState(() { _progress = 0.4; _loadingText = "Günün motivasyonu hazırlanıyor..."; });
     final quoteService = QuoteService();
     final initialQuote = await quoteService.getRandomQuote(language: initialSettings.appLanguage);
     await Future.delayed(const Duration(milliseconds: 300));
 
-    setState(() { _progress = 0.7; _loadingText = "Sistem bildirimleri ayarlanıyor..."; });
+    // Fontları arka planda indirmeye başla
+    setState(() { _progress = 0.6; _loadingText = "Görsel varlıklar hazırlanıyor..."; });
+    _preloadAllFonts(); // Başına bilerek await koymuyoruz ki ekranı dondurup beklemesin, arkada insin.
+    await Future.delayed(const Duration(milliseconds: 300));
+
+    setState(() { _progress = 0.8; _loadingText = "Sistem bildirimleri ayarlanıyor..."; });
     final notificationService = NotificationService();
     await notificationService.init();
     await Future.delayed(const Duration(milliseconds: 300));
