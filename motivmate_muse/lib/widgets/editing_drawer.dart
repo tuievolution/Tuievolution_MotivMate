@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:cached_network_image/cached_network_image.dart'; // Added for image previews
 
 import '../app_state.dart';
 import '../models/app_settings.dart';
@@ -39,6 +40,32 @@ class _EditingDrawerState extends State<EditingDrawer> {
   }
 
   String _l(String tr, String en) => draft.appLanguage == 'en' ? en : tr;
+
+  // Added local helper to calculate color filters for the preview thumbnails
+  ColorFilter? _getColorFilter(String id) {
+    switch (id) {
+      case 'sepia':
+        return const ColorFilter.mode(Color(0xFF7A4D2A), BlendMode.color);
+      case 'mono':
+        return ColorFilter.matrix(const <double>[
+          0.2126, 0.7152, 0.0722, 0, 0,
+          0.2126, 0.7152, 0.0722, 0, 0,
+          0.2126, 0.7152, 0.0722, 0, 0,
+          0, 0, 0, 1, 0,
+        ]);
+      case 'vintage':
+        return const ColorFilter.mode(Color(0xFFB08968), BlendMode.softLight);
+      case 'warm':
+        return const ColorFilter.mode(Color(0xFFFF9800), BlendMode.softLight);
+      case 'cool':
+        return const ColorFilter.mode(Color(0xFF4264FB), BlendMode.softLight);
+      case 'rosy':
+        return const ColorFilter.mode(Color(0xFFE91E63), BlendMode.softLight);
+      case 'none':
+      default:
+        return null;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -168,6 +195,8 @@ class _EditingDrawerState extends State<EditingDrawer> {
       'rosy':    {'tr': 'Pembe Ton',    'en': 'Rosy'},
     };
 
+    final currentImage = widget.appState.quote.imagePath;
+
     return ListView(
       children: [
         ListTile(
@@ -189,24 +218,89 @@ class _EditingDrawerState extends State<EditingDrawer> {
           contentPadding: EdgeInsets.zero,
           title: Text(_l('Fotoğraf Filtresi', 'Photo Filter')),
         ),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 4),
-          child: DropdownButtonFormField<String>(
-            initialValue: draft.photoFilterId,
-            items: filters.entries
-                .map(
-                  (e) => DropdownMenuItem(
-                    value: e.key,
-                    child: Text(draft.appLanguage == 'en' ? e.value['en']! : e.value['tr']!),
+        
+        // GÜNCELLEME: Filtreler için yatay kaydırılabilir önizleme listesi eklendi.
+        SizedBox(
+          height: 110, // Önizleme kartlarının sabit yüksekliği
+          child: ListView.builder(
+            scrollDirection: Axis.horizontal,
+            itemCount: filters.length,
+            itemBuilder: (context, index) {
+              final filterKey = filters.keys.elementAt(index);
+              final filterName = draft.appLanguage == 'en' 
+                  ? filters[filterKey]!['en']! 
+                  : filters[filterKey]!['tr']!;
+              
+              final isSelected = draft.photoFilterId == filterKey;
+              final colorFilter = _getColorFilter(filterKey);
+              final cs = Theme.of(context).colorScheme;
+
+              return GestureDetector(
+                onTap: () {
+                  _updateDraft(draft.copyWith(photoFilterId: filterKey));
+                },
+                child: Container(
+                  width: 76, // Her bir filtre kartının genişliği
+                  margin: const EdgeInsets.only(right: 12),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      // Seçili olan filtreye primary renginde belirgin bir çerçeve ekler
+                      color: isSelected ? cs.primary : cs.outline.withValues(alpha: 0.2),
+                      width: isSelected ? 2.5 : 1.0,
+                    ),
+                    boxShadow: isSelected 
+                        ? [BoxShadow(color: cs.primary.withValues(alpha: 0.2), blurRadius: 6)] 
+                        : null,
                   ),
-                )
-                .toList(),
-            onChanged: (value) {
-              if (value == null) return;
-              _updateDraft(draft.copyWith(photoFilterId: value));
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Expanded(
+                        child: ClipRRect(
+                          // Sadece üst köşeleri yuvarlatıyoruz ki resim kartın içine otursun
+                          borderRadius: const BorderRadius.vertical(top: Radius.circular(10.5)),
+                          child: colorFilter != null 
+                            ? ColorFiltered(
+                                colorFilter: colorFilter,
+                                child: CachedNetworkImage(
+                                  imageUrl: currentImage, 
+                                  fit: BoxFit.cover,
+                                ),
+                              )
+                            : CachedNetworkImage(
+                                imageUrl: currentImage, 
+                                fit: BoxFit.cover,
+                              ),
+                        ),
+                      ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(vertical: 6),
+                        decoration: BoxDecoration(
+                          // Seçili durumdayken alt etiketin arka planını primary rengi yapar
+                          color: isSelected ? cs.primary : cs.surfaceContainerHighest,
+                          borderRadius: const BorderRadius.vertical(bottom: Radius.circular(9.5)),
+                        ),
+                        child: Text(
+                          filterName,
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                            color: isSelected ? cs.onPrimary : cs.onSurface,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
             },
           ),
         ),
+        
         if (draft.photoFilterId != 'none') ...[
           const SizedBox(height: 12),
           ListTile(
