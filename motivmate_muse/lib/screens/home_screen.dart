@@ -437,10 +437,28 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                   Positioned.fill(
                     child: Container(
-                      color: Colors.black.withValues(
-                        alpha: appState.isOriginalView
-                            ? 0
-                            : appState.settings.backgroundOverlayOpacity,
+                      decoration: BoxDecoration(
+                        gradient: appState.isOriginalView
+                            ? null
+                            : LinearGradient(
+                                begin: Alignment.topCenter,
+                                end: Alignment.bottomCenter,
+                                stops: const [0.0, 0.25, 0.7, 1.0],
+                                colors: [
+                                  Colors.black.withValues(
+                                    alpha: (appState.settings.backgroundOverlayOpacity * 0.7).clamp(0.0, 1.0),
+                                  ),
+                                  Colors.black.withValues(
+                                    alpha: (appState.settings.backgroundOverlayOpacity * 0.2).clamp(0.0, 1.0),
+                                  ),
+                                  Colors.black.withValues(
+                                    alpha: (appState.settings.backgroundOverlayOpacity * 0.4).clamp(0.0, 1.0),
+                                  ),
+                                  Colors.black.withValues(
+                                    alpha: (appState.settings.backgroundOverlayOpacity * 0.95).clamp(0.0, 1.0),
+                                  ),
+                                ],
+                              ),
                       ),
                     ),
                   ),
