@@ -392,6 +392,30 @@ class _HomeScreenState extends State<HomeScreen> {
                   ? null
                   : _buildColorFilter(appState.settings.photoFilterId);
 
+              // ── RESPONSIVE ROTATION LOGIC ─────────────────────────────
+              // Detect if the device is currently rotated into landscape mode
+              final bool isLandscape = constraints.maxWidth > constraints.maxHeight;
+
+              // In landscape, portrait percentages (like 80% top offset) will push the card off-screen.
+              // We override the positions dynamically in landscape to keep it safely centered and visible.
+              // When the phone rotates back, it will revert to the user's saved portrait positions.
+              final double safeLeft = isLandscape 
+                  ? constraints.maxWidth * 0.1 
+                  : appState.settings.cardLeftN.clamp(0.0, 1.0) * constraints.maxWidth;
+              
+              final double safeTop = isLandscape 
+                  ? constraints.maxHeight * 0.05 // Keep it near the very top in landscape to maximize room
+                  : appState.settings.cardTopN.clamp(0.0, 1.0) * constraints.maxHeight;
+              
+              final double safeWidth = isLandscape
+                  ? constraints.maxWidth * 0.8 // Widen the card safely for landscape reading
+                  : appState.settings.cardWidthN.clamp(0.01, 1.0) * constraints.maxWidth;
+
+              // Calculate the maximum vertical space available before hitting your bottom action bar (~130px)
+              // We clamp it at 10.0 to prevent layout errors if the math ever yields a negative number.
+              final double maxAllowedHeight = (constraints.maxHeight - safeTop - 130.0).clamp(10.0, double.infinity);
+              // ──────────────────────────────────────────────────────────
+
               final blurredBackground = Stack(
                 fit: StackFit.expand,
                 children: [
@@ -475,24 +499,40 @@ class _HomeScreenState extends State<HomeScreen> {
                           // ── Quote Card ────────────────────────────────────────
                           if (showCard) 
                             Positioned(
-                              left: appState.settings.cardLeftN.clamp(0.0, 1.0) * constraints.maxWidth,
-                              top:  appState.settings.cardTopN.clamp(0.0, 1.0) * constraints.maxHeight,
-                              width:  appState.settings.cardWidthN.clamp(0.01, 1.0) * constraints.maxWidth,
-                              child: QuoteCard(
-                                text: appState.quote.text(appState.settings.appLanguage),
-                                author: appState.quote.author(appState.settings.appLanguage),
-                                cardBackgroundColor: Color(appState.settings.cardBackgroundColorValue),
-                                quoteTextColor: Color(appState.settings.textColorValue),
-                                effectColor: Color(appState.settings.effectColorValue),
-                                opacity: appState.settings.cardOpacity,
-                                fontSize: appState.settings.fontSize,
-                                fontFamily: appState.settings.fontFamily,
-                                textEffectId: appState.settings.textEffectId,
-                                showBackground: showCardBg,
-                                fillContainer: true,
-                                borderRadius: appState.settings.cardBorderRadius,
-                                cardBorderThickness: appState.settings.cardBorderThickness,
-                                cardBorderColorValue: appState.settings.cardBorderColorValue,
+                              left: safeLeft,
+                              top: safeTop,
+                              // Instead of passing width directly to Positioned, we bound the widget
+                              // in a ConstrainedBox. This forces the card to respect our calculated limits.
+                              child: ConstrainedBox(
+                                constraints: BoxConstraints(
+                                  maxWidth: safeWidth,
+                                  maxHeight: maxAllowedHeight,
+                                ),
+                                // FittedBox monitors the inner QuoteCard. If the QuoteCard tries to exceed
+                                // the maxHeight (spilling out), scaleDown proportionally shrinks the whole card to fit.
+                                child: FittedBox(
+                                  fit: BoxFit.scaleDown,
+                                  alignment: Alignment.topLeft,
+                                  child: SizedBox(
+                                    width: safeWidth, // Provide natural width so text wraps properly
+                                    child: QuoteCard(
+                                      text: appState.quote.text(appState.settings.appLanguage),
+                                      author: appState.quote.author(appState.settings.appLanguage),
+                                      cardBackgroundColor: Color(appState.settings.cardBackgroundColorValue),
+                                      quoteTextColor: Color(appState.settings.textColorValue),
+                                      effectColor: Color(appState.settings.effectColorValue),
+                                      opacity: appState.settings.cardOpacity,
+                                      fontSize: appState.settings.fontSize,
+                                      fontFamily: appState.settings.fontFamily,
+                                      textEffectId: appState.settings.textEffectId,
+                                      showBackground: showCardBg,
+                                      fillContainer: true,
+                                      borderRadius: appState.settings.cardBorderRadius,
+                                      cardBorderThickness: appState.settings.cardBorderThickness,
+                                      cardBorderColorValue: appState.settings.cardBorderColorValue,
+                                    ),
+                                  ),
+                                ),
                               ),
                             ),
                         ],
