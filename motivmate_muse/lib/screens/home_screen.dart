@@ -99,10 +99,17 @@ class _HomeScreenState extends State<HomeScreen> {
     final screenSize = MediaQuery.of(context).size;
     final currentSettings = appState.settings;
 
+    // The maximum physical width allowed for the text based on user settings.
     final double actualMaxWidth = (currentSettings.cardWidthN * screenSize.width) - 36.0; 
+    
+    // The vertical space available from the user's current top position down to the bottom safe area (140 pixels).
     final double availableHeight = ((1.0 - currentSettings.cardTopN) * screenSize.height) - 140.0;
 
+    // Start checking from the current font size.
     double safeFontSize = currentSettings.fontSize;
+    
+    // Define our minimum acceptable font size so we don't shrink the text into unreadable territory.
+    const double minFontSize = 18.0; 
     
     TextStyle getStyle(double fs) {
       try {
@@ -112,27 +119,60 @@ class _HomeScreenState extends State<HomeScreen> {
       }
     }
 
-    while (safeFontSize > 12.0) {
+    // Helper function to calculate exactly how tall the text will be at a given font size.
+    // This allows us to measure before we actually render.
+    double measureTextHeight(double fontSize) {
       final tp = TextPainter(
-        text: TextSpan(text: '"$newText"', style: getStyle(safeFontSize)),
+        text: TextSpan(text: '"$newText"', style: getStyle(fontSize)),
         textDirection: TextDirection.ltr,
         textAlign: TextAlign.center,
       );
       
       tp.layout(maxWidth: actualMaxWidth.clamp(80.0, screenSize.width));
-      
-      if (tp.height <= availableHeight) {
-        break; 
-      }
+      return tp.height;
+    }
+
+    // Measure the height at the current font size initially.
+    double textHeight = measureTextHeight(safeFontSize);
+
+    // 1. SHRINK PHASE: If the text is too tall for the current space, shrink it down.
+    // We stop shrinking if it fits OR if we hit our minimum readable size (minFontSize).
+    while (textHeight > availableHeight && safeFontSize > minFontSize) {
       safeFontSize -= 2.0; 
+      
+      // Prevent the font size from dipping below our absolute minimum
+      if (safeFontSize < minFontSize) {
+        safeFontSize = minFontSize;
+      }
+      
+      // Re-measure with the newly reduced font size
+      textHeight = measureTextHeight(safeFontSize);
     }
 
     double targetTopN = currentSettings.cardTopN;
-    if (safeFontSize < 18.0) {
-      targetTopN = 0.25; 
-      safeFontSize = 18.0; 
+
+    // 2. SHIFT PHASE: We've shrunk the font as much as we are allowed to (down to 18.0).
+    // If the text STILL doesn't fit within 'availableHeight', it means the user placed the card 
+    // too close to the bottom for a quote this long. We must push the card upwards.
+    if (textHeight > availableHeight) {
+      
+      // Calculate how many raw pixels we need vertically to show the text PLUS the bottom padding.
+      final double requiredTotalHeightPixels = textHeight + 140.0;
+      
+      // Subtract the required pixels from the total screen height to find the new, precise top pixel boundary.
+      final double newTopPixel = screenSize.height - requiredTotalHeightPixels;
+      
+      // Convert that pixel boundary back into a percentage (N value) for your state manager.
+      targetTopN = newTopPixel / screenSize.height;
+
+      // Safety clamp: Prevent a ridiculously long quote from pushing the card off the top edge of the screen.
+      // 0.05 ensures it stays at least 5% away from the top edge.
+      if (targetTopN < 0.05) {
+        targetTopN = 0.05; 
+      }
     }
 
+    // 3. APPLY PHASE: Save the calculated safe font size and the dynamically adjusted top position.
     final updatedSettings = currentSettings.copyWith(
       fontSize: safeFontSize,
       cardTopN: targetTopN,
