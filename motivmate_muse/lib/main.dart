@@ -1,6 +1,6 @@
 import 'dart:async';
 import 'dart:ui'; 
-
+import 'package:flutter/services.dart';
 import 'package:flutter/material.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart' as ads;
 import 'package:provider/provider.dart';
@@ -13,6 +13,10 @@ import 'screens/splash_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Sadece üstteki Status Bar'ı gizler, alttaki OS Navigasyon çubuğunu (bottom) bırakır.
+  SystemChrome.setEnabledSystemUIMode(SystemUiMode.manual, overlays: [SystemUiOverlay.bottom]);
+
   await ads.MobileAds.instance.initialize();
   
   runApp(const MotivMoodRoot());
