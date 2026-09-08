@@ -383,7 +383,6 @@ class _HomeScreenState extends State<HomeScreen> {
       drawer: const SettingsDrawer(),
       body: Builder(
         builder: (scaffoldContext) => GestureDetector(
-          // YENİ: Ekrana basitçe dokunulduğunda alt menüyü gizler/gösterir
           onTap: () {
             setState(() {
               _isUIVisible = !_isUIVisible;
@@ -396,10 +395,17 @@ class _HomeScreenState extends State<HomeScreen> {
                 final showCard = !appState.isOriginalView && appState.isQuoteVisible;
                 final showCardBg = appState.settings.showCardBackground;
 
-                final backgroundImage = CachedNetworkImage(
-                  imageUrl: appState.quote.imagePath,
-                  cacheManager: customCacheManager,
-                  fit: BoxFit.cover,
+                // 1. ANİMASYON: Arka plan resmi değiştiğinde (gece yarısı) yavaşça cross-fade yapar
+                final backgroundImage = AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 800),
+                  child: CachedNetworkImage(
+                    key: ValueKey(appState.quote.imagePath), 
+                    imageUrl: appState.quote.imagePath,
+                    cacheManager: customCacheManager,
+                    fit: BoxFit.cover,
+                    width: double.infinity,  // Resmin genişliğini ekrana yaymaya zorlar
+                    height: double.infinity, // Resmin yüksekliğini ekrana yaymaya zorlar
+                  ),
                 );
 
                 final colorFilter = appState.isOriginalView
@@ -407,26 +413,20 @@ class _HomeScreenState extends State<HomeScreen> {
                     : _buildColorFilter(appState.settings.photoFilterId);
 
                 // ── RESPONSIVE ROTATION LOGIC ─────────────────────────────
-                // Detect if the device is currently rotated into landscape mode
                 final bool isLandscape = constraints.maxWidth > constraints.maxHeight;
 
-                // In landscape, portrait percentages (like 80% top offset) will push the card off-screen.
-                // We override the positions dynamically in landscape to keep it safely centered and visible.
-                // When the phone rotates back, it will revert to the user's saved portrait positions.
                 final double safeLeft = isLandscape 
                     ? constraints.maxWidth * 0.1 
                     : appState.settings.cardLeftN.clamp(0.0, 1.0) * constraints.maxWidth;
                 
                 final double safeTop = isLandscape 
-                    ? constraints.maxHeight * 0.05 // Keep it near the very top in landscape to maximize room
+                    ? constraints.maxHeight * 0.05 
                     : appState.settings.cardTopN.clamp(0.0, 1.0) * constraints.maxHeight;
                 
                 final double safeWidth = isLandscape
-                    ? constraints.maxWidth * 0.8 // Widen the card safely for landscape reading
+                    ? constraints.maxWidth * 0.8 
                     : appState.settings.cardWidthN.clamp(0.01, 1.0) * constraints.maxWidth;
 
-                // Calculate the maximum vertical space available before hitting your bottom action bar (~130px)
-                // We clamp it at 10.0 to prevent layout errors if the math ever yields a negative number.
                 final double maxAllowedHeight = (constraints.maxHeight - safeTop - 130.0).clamp(10.0, double.infinity);
                 // ──────────────────────────────────────────────────────────
 
@@ -459,18 +459,10 @@ class _HomeScreenState extends State<HomeScreen> {
                                   end: Alignment.bottomCenter,
                                   stops: const [0.0, 0.25, 0.7, 1.0],
                                   colors: [
-                                    Colors.black.withValues(
-                                      alpha: (appState.settings.backgroundOverlayOpacity * 0.7).clamp(0.0, 1.0),
-                                    ),
-                                    Colors.black.withValues(
-                                      alpha: (appState.settings.backgroundOverlayOpacity * 0.2).clamp(0.0, 1.0),
-                                    ),
-                                    Colors.black.withValues(
-                                      alpha: (appState.settings.backgroundOverlayOpacity * 0.4).clamp(0.0, 1.0),
-                                    ),
-                                    Colors.black.withValues(
-                                      alpha: (appState.settings.backgroundOverlayOpacity * 0.95).clamp(0.0, 1.0),
-                                    ),
+                                    Colors.black.withValues(alpha: (appState.settings.backgroundOverlayOpacity * 0.7).clamp(0.0, 1.0)),
+                                    Colors.black.withValues(alpha: (appState.settings.backgroundOverlayOpacity * 0.2).clamp(0.0, 1.0)),
+                                    Colors.black.withValues(alpha: (appState.settings.backgroundOverlayOpacity * 0.4).clamp(0.0, 1.0)),
+                                    Colors.black.withValues(alpha: (appState.settings.backgroundOverlayOpacity * 0.95).clamp(0.0, 1.0)),
                                   ],
                                 ),
                         ),
@@ -488,7 +480,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           children: [
                             Positioned.fill(child: blurredBackground),
 
-                            // ── MotivMood Header (YENİ: Watermark gibi sürekli ekranda kalır) ──
+                            // ── MotivMood Header (Sabit Watermark) ──
                             Positioned(
                               top: safePaddingTop + 20,
                               left: 0,
@@ -506,11 +498,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                         fontWeight: FontWeight.w800,
                                         letterSpacing: 3.0,
                                         shadows: [
-                                          Shadow(
-                                            color: Colors.black.withValues(alpha: 0.6),
-                                            blurRadius: 16,
-                                            offset: const Offset(0, 3),
-                                          ),
+                                          Shadow(color: Colors.black.withValues(alpha: 0.6), blurRadius: 16, offset: const Offset(0, 3)),
                                         ],
                                       ),
                                     ),
@@ -528,40 +516,47 @@ class _HomeScreenState extends State<HomeScreen> {
                               ),
                             ),
 
-                            // ── Quote Card (SENİN ORİJİNAL DİNAMİK YERLEŞİM KODLARIN) ──
+                            // ── Quote Card ──
                             if (showCard) 
-                              Positioned(
+                              // 2. ANİMASYON: Kartın boyutu/konumu değiştiğinde zıplamak yerine kayarak konumlanır.
+                              AnimatedPositioned(
+                                duration: const Duration(milliseconds: 400),
+                                curve: Curves.easeInOutCubic,
                                 left: safeLeft,
                                 top: safeTop,
-                                // Instead of passing width directly to Positioned, we bound the widget
-                                // in a ConstrainedBox. This forces the card to respect our calculated limits.
-                                child: ConstrainedBox(
-                                  constraints: BoxConstraints(
-                                    maxWidth: safeWidth,
-                                    maxHeight: maxAllowedHeight,
-                                  ),
-                                  // FittedBox monitors the inner QuoteCard. If the QuoteCard tries to exceed
-                                  // the maxHeight (spilling out), scaleDown proportionally shrinks the whole card to fit.
-                                  child: FittedBox(
-                                    fit: BoxFit.scaleDown,
-                                    alignment: Alignment.topLeft,
-                                    child: SizedBox(
-                                      width: safeWidth, // Provide natural width so text wraps properly
-                                      child: QuoteCard(
-                                        text: appState.quote.text(appState.settings.appLanguage),
-                                        author: appState.quote.author(appState.settings.appLanguage),
-                                        cardBackgroundColor: Color(appState.settings.cardBackgroundColorValue),
-                                        quoteTextColor: Color(appState.settings.textColorValue),
-                                        effectColor: Color(appState.settings.effectColorValue),
-                                        opacity: appState.settings.cardOpacity,
-                                        fontSize: appState.settings.fontSize,
-                                        fontFamily: appState.settings.fontFamily,
-                                        textEffectId: appState.settings.textEffectId,
-                                        showBackground: showCardBg,
-                                        fillContainer: true,
-                                        borderRadius: appState.settings.cardBorderRadius,
-                                        cardBorderThickness: appState.settings.cardBorderThickness,
-                                        cardBorderColorValue: appState.settings.cardBorderColorValue,
+                                // 3. ANİMASYON: İçerideki metin/söz değiştiğinde yumuşakça cross-fade yapar.
+                                child: AnimatedSwitcher(
+                                  duration: const Duration(milliseconds: 350),
+                                  switchInCurve: Curves.easeIn,
+                                  switchOutCurve: Curves.easeOut,
+                                  child: ConstrainedBox(
+                                    // Söz değiştiğini algılaması için Key olarak güncel sözü veriyoruz
+                                    key: ValueKey(appState.quote.text(appState.settings.appLanguage)),
+                                    constraints: BoxConstraints(
+                                      maxWidth: safeWidth,
+                                      maxHeight: maxAllowedHeight,
+                                    ),
+                                    child: FittedBox(
+                                      fit: BoxFit.scaleDown,
+                                      alignment: Alignment.topLeft,
+                                      child: SizedBox(
+                                        width: safeWidth,
+                                        child: QuoteCard(
+                                          text: appState.quote.text(appState.settings.appLanguage),
+                                          author: appState.quote.author(appState.settings.appLanguage),
+                                          cardBackgroundColor: Color(appState.settings.cardBackgroundColorValue),
+                                          quoteTextColor: Color(appState.settings.textColorValue),
+                                          effectColor: Color(appState.settings.effectColorValue),
+                                          opacity: appState.settings.cardOpacity,
+                                          fontSize: appState.settings.fontSize,
+                                          fontFamily: appState.settings.fontFamily,
+                                          textEffectId: appState.settings.textEffectId,
+                                          showBackground: showCardBg,
+                                          fillContainer: true,
+                                          borderRadius: appState.settings.cardBorderRadius,
+                                          cardBorderThickness: appState.settings.cardBorderThickness,
+                                          cardBorderColorValue: appState.settings.cardBorderColorValue,
+                                        ),
                                       ),
                                     ),
                                   ),
@@ -572,28 +567,21 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                     ),
 
-                    // ── Bottom Action Bar (YENİ: Tıklanarak ANIMASYONLU ŞEKİLDE GİZLENİR) ──
+                    // ── Bottom Action Bar (Dokunarak Gizlenebilir) ──
                     AnimatedPositioned(
                       duration: const Duration(milliseconds: 350),
                       curve: Curves.easeInOutCubic,
                       left: 0,
                       right: 0,
-                      bottom: _isUIVisible ? safePaddingBottom + 24 : -100, // Görünmezken aşağı kayar
+                      bottom: _isUIVisible ? safePaddingBottom + 24 : -100, 
                       child: Center(
                         child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 10,
-                            vertical: 8,
-                          ),
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                           decoration: BoxDecoration(
                             color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.88),
                             borderRadius: BorderRadius.circular(26),
                             boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withValues(alpha: 0.18),
-                                blurRadius: 12,
-                                offset: const Offset(0, 4),
-                              ),
+                              BoxShadow(color: Colors.black.withValues(alpha: 0.18), blurRadius: 12, offset: const Offset(0, 4)),
                             ],
                           ),
                           child: Row(
@@ -606,26 +594,17 @@ class _HomeScreenState extends State<HomeScreen> {
                                     context: scaffoldContext,
                                     isScrollControlled: true,
                                     backgroundColor: preset.backgroundScaffoldColor,
-                                    shape: const RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.vertical(
-                                        top: Radius.circular(18),
-                                      ),
-                                    ),
+                                    shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(18))),
                                     builder: (_) => SizedBox(
                                       height: MediaQuery.of(context).size.height * 0.85,
-                                      child: EditingDrawer(
-                                        appState: appState,
-                                        onDownload: () => _saveCurrentView(scaffoldContext, appState, preset),
-                                      ),
+                                      child: EditingDrawer(appState: appState, onDownload: () => _saveCurrentView(scaffoldContext, appState, preset)),
                                     ),
                                   );
                                 },
                               ),
                               const SizedBox(width: 10),
                               _ActionButton(
-                                icon: appState.isQuoteVisible
-                                    ? Icons.favorite
-                                    : Icons.favorite_border,
+                                icon: appState.isQuoteVisible ? Icons.favorite : Icons.favorite_border,
                                 onTap: appState.toggleQuoteVisibility,
                               ),
                               const SizedBox(width: 10),
