@@ -182,7 +182,7 @@ class _CardResizerPopupState extends State<CardResizerPopup> {
                     // YÜZEY 2: KART GÖVDESİ (Sürüklenebilir)
                     Positioned(
                       left: left,
-                      top: _topN.clamp(0.0, 0.9) * cH,
+                      top: _topN.clamp(0.0, 1.0) * cH,
                       width: width,
                       child: Stack(
                         children: [

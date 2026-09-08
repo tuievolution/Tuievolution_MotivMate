@@ -14,6 +14,11 @@ import 'screens/splash_screen.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
+  // Uygulama KESİNLİKLE Dikey (Portrait) moda kilit
+  await SystemChrome.setPreferredOrientations([
+    DeviceOrientation.portraitUp,
+  ]);
+
   // Sadece üstteki Status Bar'ı gizler, alttaki OS Navigasyon çubuğunu (bottom) bırakır.
   SystemChrome.setEnabledSystemUIMode(SystemUiMode.manual, overlays: [SystemUiOverlay.bottom]);
 
